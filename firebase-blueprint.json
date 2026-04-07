@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "DirectoryItem": {
+      "title": "Directory Item",
+      "description": "A website, app, or course entry in the directory.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "fullDescription": { "type": "string" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["Website", "App", "Course", "YouTube"] },
+        "imageUrl": { "type": "string" },
+        "purpose": { "type": "string" },
+        "level": { "type": "string", "enum": ["Beginner", "Elementary", "Intermediate", "Advanced"] },
+        "pricing": { "type": "string", "enum": ["Free", "Freemium", "Paid"] },
+        "subscriptionPrice": { "type": "string" },
+        "platforms": { "type": "array", "items": { "type": "string" } },
+        "pros": { "type": "array", "items": { "type": "string" } },
+        "cons": { "type": "array", "items": { "type": "string" } },
+        "alternatives": { "type": "array", "items": { "type": "string" } },
+        "link": { "type": "string" },
+        "averageRating": { "type": "number" },
+        "totalRatings": { "type": "number" },
+        "viewsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isNew": { "type": "boolean" },
+        "isTopRated": { "type": "boolean" }
+      },
+      "required": ["title", "category", "type", "link"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A user review for a directory item.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["itemId", "rating", "comment"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A category for items.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "items": {
+      "schema": "DirectoryItem",
+      "description": "Collection of directory items."
+    },
+    "reviews": {
+      "schema": "Review",
+      "description": "Collection of user reviews."
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Collection of item categories."
+    }
+  }
+}
