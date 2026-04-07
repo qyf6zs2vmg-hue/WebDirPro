@@ -16,6 +16,16 @@ export interface Review {
   createdAt: any; // Firestore Timestamp
 }
 
+export type AudienceLevel = 'Beginner' | 'Pro' | 'All';
+export type AudienceRole = 'Student' | 'Developer' | 'All';
+export type AudiencePC = 'Weak' | 'Powerful' | 'All';
+
+export interface TargetAudience {
+  level: AudienceLevel;
+  role: AudienceRole;
+  pc: AudiencePC;
+}
+
 export interface DirectoryItem {
   id: string;
   title: string;
@@ -35,6 +45,10 @@ export interface DirectoryItem {
   averageRating: number;
   totalRatings: number;
   viewsCount: number;
+  favoritesCount: number;
+  popularityTrend: number; // growth percentage
+  currentViewers: number;
+  targetAudience: TargetAudience;
   createdAt: any; // Firestore Timestamp
   isNew?: boolean;
   isTopRated?: boolean;

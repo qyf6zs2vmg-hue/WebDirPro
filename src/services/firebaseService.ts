@@ -196,3 +196,23 @@ export const toggleFavorite = (itemId: string, isFavorite: boolean) => {
   localStorage.setItem('favorites', JSON.stringify(favorites));
   window.dispatchEvent(new Event('favoritesUpdated'));
 };
+
+export const seedDatabase = async (categories: Category[], items: Partial<DirectoryItem>[]) => {
+  // Add categories
+  for (const cat of categories) {
+    await addDoc(collection(db, 'categories'), { name: cat.name });
+  }
+
+  // Add items
+  for (const item of items) {
+    await addDoc(collection(db, 'items'), {
+      ...item,
+      createdAt: serverTimestamp(),
+      viewsCount: item.viewsCount || 0,
+      totalRatings: item.totalRatings || 0,
+      averageRating: item.averageRating || 0,
+      isNew: item.isNew || false,
+      isTopRated: item.isTopRated || false
+    });
+  }
+};

@@ -69,6 +69,10 @@ export const getRecentlyViewed = (allItems: DirectoryItem[]): DirectoryItem[] =>
     .filter((item): item is DirectoryItem => !!item);
 };
 
+export const clearRecentlyViewed = () => {
+  localStorage.removeItem(STORAGE_KEYS.RECENTLY_VIEWED);
+};
+
 export const getFavorites = (allItems: DirectoryItem[]): DirectoryItem[] => {
   const favIds: string[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.FAVORITES) || '[]');
   return favIds

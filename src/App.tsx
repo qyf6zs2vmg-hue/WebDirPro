@@ -7,7 +7,7 @@ import {
   useNavigate,
   useLocation
 } from 'react-router-dom';
-import { Search, Menu, X, LayoutGrid, Trophy, Settings, User, AlertCircle, Send, ChevronDown, Heart } from 'lucide-react';
+import { Search, Menu, X, LayoutGrid, Trophy, Settings, User, AlertCircle, Send, ChevronDown, Heart, Clock } from 'lucide-react';
 import { auth } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Home } from './pages/Home';
@@ -15,6 +15,7 @@ import { ItemDetail } from './pages/ItemDetail';
 import { TopItems } from './pages/TopItems';
 import { AdminPanel } from './pages/AdminPanel';
 import { SubmitItem } from './pages/SubmitItem';
+import { History } from './pages/History';
 import { useCategories } from './services/firebaseService';
 import { cn } from './lib/utils';
 import { ThemeProvider } from './context/ThemeContext';
@@ -78,6 +79,7 @@ const Header = () => {
   const navItems = [
     { name: 'Каталог', path: '/', icon: LayoutGrid },
     { name: 'Топ рейтинга', path: '/top', icon: Trophy },
+    { name: 'История', path: '/history', icon: Clock },
     { name: 'Предложить', path: '/submit', icon: Send },
     { name: 'Админ', path: '/admin', icon: Settings, adminOnly: true },
   ];
@@ -92,7 +94,7 @@ const Header = () => {
                 <LayoutGrid className="text-white" size={20} />
               </div>
               <span className="text-xl font-bold tracking-tight text-foreground hidden sm:block">
-                WebDir<span className="text-blue-600">Pro</span>
+                WebDir<span className="text-blue-600 dark:text-blue-500">Pro</span>
               </span>
             </Link>
 
@@ -115,7 +117,7 @@ const Header = () => {
                   <Link 
                     to="/" 
                     onClick={() => setIsCatOpen(false)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-all"
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                   >
                     Все ресурсы
                   </Link>
@@ -124,7 +126,7 @@ const Header = () => {
                       key={cat.id}
                       to={`/?category=${encodeURIComponent(cat.name)}`}
                       onClick={() => setIsCatOpen(false)}
-                      className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-all"
+                      className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                     >
                       {cat.name}
                     </Link>
@@ -143,7 +145,7 @@ const Header = () => {
                   className={cn(
                     "flex items-center gap-2 text-sm font-bold transition-colors",
                     location.pathname === item.path 
-                      ? "text-blue-600" 
+                      ? "text-blue-600 dark:text-blue-500" 
                       : "text-gray-600 dark:text-gray-400 hover:text-foreground"
                   )}
                 >
@@ -213,7 +215,7 @@ const Header = () => {
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-card border-t border-border py-4 px-4 space-y-2 animate-in slide-in-from-top-4 duration-300">
-          <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Навигация</div>
+          <div className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Навигация</div>
           {navItems.map((item) => (
             (!item.adminOnly || isAdminMode) && (
               <Link
@@ -223,7 +225,7 @@ const Header = () => {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium",
                   location.pathname === item.path 
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" 
+                    ? "bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" 
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
               >
@@ -233,7 +235,7 @@ const Header = () => {
             )
           ))}
           
-          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-t border-border">Категории</div>
+          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-t border-border">Категории</div>
           <div className="grid grid-cols-2 gap-2">
             {categories.map(cat => (
               <Link
@@ -265,6 +267,7 @@ export default function App() {
               <Route path="/top" element={<TopItems />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/submit" element={<SubmitItem />} />
+              <Route path="/history" element={<History />} />
             </Routes>
           </main>
           <footer className="bg-card border-t border-border py-12 mt-20">

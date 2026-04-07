@@ -31,7 +31,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
             size={16}
             className={cn(
               "transition-colors",
-              isFilled ? "fill-yellow-400 text-yellow-400" : "text-gray-300",
+              isFilled ? "fill-yellow-400 text-yellow-400" : "text-gray-300 dark:text-gray-700",
               interactive && "cursor-pointer hover:scale-110 active:scale-95"
             )}
             onMouseEnter={() => interactive && setHoverRating(starValue)}

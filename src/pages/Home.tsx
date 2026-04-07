@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, SlidersHorizontal, Heart, Sparkles, Clock, Star } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Heart, Sparkles, Clock, Star, LayoutGrid } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useItems, useCategories, useFavorites } from '@/services/firebaseService';
 import { ItemCard } from '@/components/ItemCard';
@@ -9,6 +9,16 @@ import { getRecommendedItems, getRecentlyViewed, trackSearchQuery } from '@/serv
 
 export const Home = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [placeholder, setPlaceholder] = React.useState('Поиск...');
+
+  React.useEffect(() => {
+    const updatePlaceholder = () => {
+      setPlaceholder(window.innerWidth < 640 ? 'Поиск...' : 'Поиск ресурсов, инструментов, курсов...');
+    };
+    updatePlaceholder();
+    window.addEventListener('resize', updatePlaceholder);
+    return () => window.removeEventListener('resize', updatePlaceholder);
+  }, []);
   const [filters, setFilters] = React.useState({
     category: 'All',
     type: 'All',
@@ -70,31 +80,32 @@ export const Home = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Hero Section - Compact */}
-      <div className="relative mb-10 py-12 px-6 rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 overflow-hidden shadow-2xl shadow-blue-500/20">
+      <div className="relative mb-10 py-12 px-6 rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-900 dark:to-indigo-950 overflow-hidden shadow-2xl shadow-blue-500/20">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px] dark:bg-blue-400" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px] dark:bg-indigo-400" />
         </div>
         
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4 leading-tight">
-            Лучшие <span className="text-blue-200">ресурсы</span> для вашего роста
+            Лучшие <span className="text-blue-200 dark:text-blue-300">ресурсы</span> для вашего роста
           </h1>
-          <p className="text-blue-100 text-sm sm:text-base font-medium mb-8 opacity-90">
+          <p className="text-blue-100 dark:text-blue-200/80 text-sm sm:text-base font-medium mb-8 opacity-90">
             Курируемый каталог сайтов, приложений и курсов с высоким рейтингом.
           </p>
 
           {/* Search Bar in Hero */}
           <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300 dark:text-blue-400" size={20} />
             <input 
               type="text" 
-              placeholder="Поиск ресурсов, инструментов, курсов..."
-              className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder:text-blue-200 focus:outline-none focus:ring-4 focus:ring-white/10 focus:bg-white/20 transition-all shadow-xl"
+              placeholder={placeholder}
+              className="w-full pl-12 pr-4 py-4 bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl text-white placeholder:text-blue-200 dark:placeholder:text-blue-300/50 focus:outline-none focus:ring-4 focus:ring-white/10 dark:focus:ring-blue-500/20 focus:bg-white/20 dark:focus:bg-black/30 transition-all shadow-xl"
               value={searchQuery}
               onChange={handleSearch}
             />
           </div>
+          
         </div>
       </div>
 
@@ -121,7 +132,7 @@ export const Home = () => {
         <aside className="hidden lg:block w-64 flex-shrink-0">
           <div className="sticky top-24 space-y-8">
             <div>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Сортировка</h3>
+              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Сортировка</h3>
               <div className="space-y-2">
                 {filterOptions.sort.map(opt => (
                   <button
@@ -141,7 +152,7 @@ export const Home = () => {
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Категории</h3>
+              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Категории</h3>
               <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
                 <button
                   onClick={() => setFilters({ ...filters, category: 'All' })}
@@ -173,8 +184,14 @@ export const Home = () => {
           </div>
         </aside>
 
-        {/* Grid Area */}
-        <div className="flex-grow">
+      {/* Grid Area */}
+      <div className="flex-grow">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+            <LayoutGrid className="text-indigo-600 dark:text-indigo-400" size={20} />
+          </div>
+          <h2 className="text-xl font-bold text-foreground">Каталог ресурсов</h2>
+        </div>
           {/* Mobile Filter Controls */}
           <div className="lg:hidden flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
             <button 
@@ -203,9 +220,9 @@ export const Home = () => {
             <div className="lg:hidden bg-card border border-border rounded-2xl p-4 mb-6 animate-in slide-in-from-top-4 duration-300">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Сортировка</label>
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Сортировка</label>
                   <select 
-                    className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground"
+                    className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={filters.sortBy}
                     onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
                   >
@@ -213,9 +230,9 @@ export const Home = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Категория</label>
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Категория</label>
                   <select 
-                    className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground"
+                    className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                   >
@@ -252,22 +269,7 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* Recently Viewed Section */}
-      {!loading && recentlyViewed.length > 0 && (
-        <section className="mt-20">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <Clock className="text-gray-600 dark:text-gray-400" size={20} />
-            </div>
-            <h2 className="text-xl font-bold text-foreground">Вы недавно смотрели</h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {recentlyViewed.map(item => (
-              <ItemCard key={item.id} item={item} compact />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Recently Viewed Section removed from Home */}
     </div>
   );
 };

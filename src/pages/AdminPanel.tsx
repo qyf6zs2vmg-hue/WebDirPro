@@ -38,7 +38,8 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
-import { useItems, useCategories } from '@/services/firebaseService';
+import { useItems, useCategories, seedDatabase } from '@/services/firebaseService';
+import { INITIAL_CATEGORIES, INITIAL_ITEMS } from '@/services/seedData';
 import { DirectoryItem, Category, ItemType, PricingType, Platform, Review } from '@/types';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { cn } from '@/lib/utils';
@@ -205,6 +206,23 @@ export const AdminPanel = () => {
     }
   };
 
+  const handleSeedDatabase = async () => {
+    triggerConfirm(
+      "Восстановить базу данных",
+      "Вы уверены, что хотите восстановить базу данных начальными данными? Это добавит стандартные категории и ресурсы.",
+      async () => {
+        try {
+          await seedDatabase(INITIAL_CATEGORIES, INITIAL_ITEMS as any);
+          showToast("База данных успешно восстановлена!", "success");
+        } catch (error) {
+          console.error(error);
+          showToast("Ошибка при восстановлении базы данных", "error");
+        }
+      },
+      'primary'
+    );
+  };
+
   const handleDeleteSubmission = async (id: string) => {
     triggerConfirm(
       "Отклонить заявку",
@@ -283,14 +301,14 @@ export const AdminPanel = () => {
   if (!isAdminMode) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6 text-red-600">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full mb-6 text-red-600 dark:text-red-400">
           <AlertCircle size={32} />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещен</h1>
-        <p className="text-gray-600 mb-8">Вы должны быть администратором для доступа к этой панели.</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Доступ запрещен</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">Вы должны быть администратором для доступа к этой панели.</p>
         <button 
           onClick={() => window.location.href = '/'}
-          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg"
+          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
         >
           Вернуться на главную
         </button>
@@ -306,6 +324,13 @@ export const AdminPanel = () => {
           <p className="text-gray-500 dark:text-gray-400">Управляйте контентом каталога и категориями.</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
+          <button 
+            onClick={handleSeedDatabase}
+            className="flex flex-1 md:flex-none items-center justify-center gap-2 px-4 py-2 bg-input text-foreground font-bold rounded-lg border border-border hover:bg-border transition-colors"
+          >
+            <Database size={18} />
+            Восстановить БД
+          </button>
           <button 
             onClick={() => { setIsEditing(true); setEditingItem({}); }}
             className="flex flex-1 md:flex-none items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
@@ -360,53 +385,48 @@ export const AdminPanel = () => {
 
       {/* Tabs */}
       <div className="flex gap-4 mb-8 border-b border-border overflow-x-auto no-scrollbar">
-        <button 
-          onClick={() => setActiveTab('items')}
-          className={cn(
-            "pb-4 px-2 text-sm font-bold transition-all border-b-2 whitespace-nowrap",
-            activeTab === 'items' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
-          )}
-        >
-          Ресурсы
-        </button>
-        <button 
-          onClick={() => setActiveTab('categories')}
-          className={cn(
-            "pb-4 px-2 text-sm font-bold transition-all border-b-2 whitespace-nowrap",
-            activeTab === 'categories' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
-          )}
-        >
-          Категории
-        </button>
-        <button 
-          onClick={() => setActiveTab('submissions')}
-          className={cn(
-            "pb-4 px-2 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'submissions' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
-          )}
-        >
-          Заявки
-          {submissions.length > 0 && (
-            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {submissions.length}
-            </span>
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('reviews')}
-          className={cn(
-            "pb-4 px-2 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'reviews' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
-          )}
-        >
-          Отзывы
-          {reviews.length > 0 && (
-            <span className="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {reviews.length}
-            </span>
-          )}
-        </button>
-      </div>
+          <button 
+            onClick={() => setActiveTab('items')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all border-b-2 whitespace-nowrap",
+              activeTab === 'items' ? "border-blue-600 text-blue-600 dark:text-blue-500" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
+            )}
+          >
+            Ресурсы
+          </button>
+          <button 
+            onClick={() => setActiveTab('categories')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all border-b-2 whitespace-nowrap",
+              activeTab === 'categories' ? "border-blue-600 text-blue-600 dark:text-blue-500" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
+            )}
+          >
+            Категории
+          </button>
+          <button 
+            onClick={() => setActiveTab('submissions')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap",
+              activeTab === 'submissions' ? "border-blue-600 text-blue-600 dark:text-blue-500" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
+            )}
+          >
+            Заявки
+            {submissions.length > 0 && (
+              <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                {submissions.length}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => setActiveTab('reviews')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap",
+              activeTab === 'reviews' ? "border-blue-600 text-blue-600 dark:text-blue-500" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-foreground"
+            )}
+          >
+            Отзывы
+          </button>
+        </div>
 
       {activeTab === 'items' && (
         <div className="grid grid-cols-1 gap-8">
@@ -829,15 +849,48 @@ export const AdminPanel = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Альтернативы (через запятую)</label>
-                  <textarea 
-                    className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    rows={2}
-                    value={altsText}
-                    onChange={(e) => setAltsText(e.target.value)}
-                    placeholder="Google, Microsoft, Apple..."
-                  />
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Для кого (Уровень / Роль / ПК)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select 
+                      className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
+                      value={editingItem?.targetAudience?.level || 'All'}
+                      onChange={(e) => setEditingItem({ ...editingItem, targetAudience: { ...(editingItem?.targetAudience || { level: 'All', role: 'All', pc: 'All' }), level: e.target.value as any } })}
+                    >
+                      <option value="All">Уровень: Все</option>
+                      <option value="Beginner">Новичок</option>
+                      <option value="Pro">Профи</option>
+                    </select>
+                    <select 
+                      className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
+                      value={editingItem?.targetAudience?.role || 'All'}
+                      onChange={(e) => setEditingItem({ ...editingItem, targetAudience: { ...(editingItem?.targetAudience || { level: 'All', role: 'All', pc: 'All' }), role: e.target.value as any } })}
+                    >
+                      <option value="All">Роль: Все</option>
+                      <option value="Student">Школьник</option>
+                      <option value="Developer">Разработчик</option>
+                    </select>
+                    <select 
+                      className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
+                      value={editingItem?.targetAudience?.pc || 'All'}
+                      onChange={(e) => setEditingItem({ ...editingItem, targetAudience: { ...(editingItem?.targetAudience || { level: 'All', role: 'All', pc: 'All' }), pc: e.target.value as any } })}
+                    >
+                      <option value="All">ПК: Любой</option>
+                      <option value="Weak">Слабый</option>
+                      <option value="Powerful">Мощный</option>
+                    </select>
+                  </div>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Альтернативы (через запятую)</label>
+                <textarea 
+                  className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  rows={2}
+                  value={altsText}
+                  onChange={(e) => setAltsText(e.target.value)}
+                  placeholder="Google, Microsoft, Apple..."
+                />
               </div>
 
               <div className="flex justify-end gap-4 pt-8 border-t border-border">

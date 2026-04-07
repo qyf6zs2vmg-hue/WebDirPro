@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, ExternalLink } from 'lucide-react';
+import { Heart, Star, ExternalLink, Users, Zap, Monitor } from 'lucide-react';
 import { DirectoryItem } from '@/types';
 import { RatingStars } from './RatingStars';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
       onClick={handleTrackView}
       className={cn(
         "group block bg-card rounded-2xl border border-border overflow-hidden card-shadow flex flex-col h-full cursor-pointer no-underline transition-all duration-300",
+        "dark:hover:border-blue-500/50 dark:hover:shadow-blue-500/10",
         compact ? "p-2" : "p-0"
       )}
     >
@@ -52,7 +53,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
           <span className="text-white text-xs font-bold flex items-center gap-1">
             Подробнее <ExternalLink size={12} />
           </span>
@@ -73,7 +74,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
             "absolute top-2 right-2 p-2 rounded-full backdrop-blur-md transition-all duration-300",
             isFavorite 
               ? "bg-red-500 text-white shadow-lg shadow-red-500/20" 
-              : "bg-white/20 text-white hover:bg-white/40 border border-white/30"
+              : "bg-white/10 text-white hover:bg-white/40 border border-white/30"
           )}
         >
           <Heart size={14} className={cn(isFavorite && "fill-current")} />
@@ -87,7 +88,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
           </span>
           <div className="flex items-center gap-1">
             <Star size={12} className="fill-yellow-400 text-yellow-400" />
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold">
+            <span className="text-[10px] text-gray-500 dark:text-gray-300 font-bold">
               {item.averageRating.toFixed(1)}
             </span>
           </div>
@@ -104,6 +105,30 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
             {item.shortDescription}
           </p>
+        )}
+
+        {/* Target Audience Badges */}
+        {!compact && item.targetAudience && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800/30">
+              <Users size={10} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 uppercase">
+                {item.targetAudience.level === 'Beginner' ? 'Новичок' : item.targetAudience.level === 'Pro' ? 'Профи' : 'Всем'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-md border border-indigo-100 dark:border-indigo-800/30">
+              <Zap size={10} className="text-indigo-600 dark:text-indigo-400" />
+              <span className="text-[9px] font-bold text-indigo-700 dark:text-indigo-300 uppercase">
+                {item.targetAudience.role === 'Student' ? 'Школьник' : item.targetAudience.role === 'Developer' ? 'Разработчик' : 'Всем'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-100 dark:border-purple-800/30">
+              <Monitor size={10} className="text-purple-600 dark:text-purple-400" />
+              <span className="text-[9px] font-bold text-purple-700 dark:text-purple-300 uppercase">
+                {item.targetAudience.pc === 'Weak' ? 'Слабый ПК' : item.targetAudience.pc === 'Powerful' ? 'Мощный ПК' : 'Любой ПК'}
+              </span>
+            </div>
+          </div>
         )}
 
         <div className="flex items-center justify-between pt-3 border-t border-border mt-auto">
