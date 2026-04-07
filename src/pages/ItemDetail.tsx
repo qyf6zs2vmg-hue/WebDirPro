@@ -12,60 +12,81 @@ import {
   Calendar,
   Layers,
   ArrowRight,
-  Trophy
+  Trophy,
+  Heart
 } from 'lucide-react';
-import { useItem, useReviews, submitReview, incrementViews } from '@/services/firebaseService';
+import { useItem, useReviews, submitReview, incrementViews, useFavorites, toggleFavorite, useItems } from '@/services/firebaseService';
 import { RatingStars } from '@/components/RatingStars';
+import { ItemCard } from '@/components/ItemCard';
 import { format } from 'date-fns';
-import { auth } from '@/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { cn } from '@/lib/utils';
+import { useToast, Toast } from '@/components/Toast';
 
 export const ItemDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { item, loading: itemLoading } = useItem(id!);
   const { reviews, loading: reviewsLoading } = useReviews(id!);
-  const [user, setUser] = React.useState<User | null>(null);
+  const { items: allItems } = useItems();
+  const { favorites } = useFavorites();
+  const { toast, showToast, hideToast } = useToast();
+  const isFavorite = id ? favorites.includes(id) : false;
+
+  const relatedItems = React.useMemo(() => {
+    if (!item || !allItems.length) return [];
+    return allItems
+      .filter(i => i.category === item.category && i.id !== item.id)
+      .slice(0, 3);
+  }, [item, allItems]);
   const [userRating, setUserRating] = React.useState(0);
+  const [userName, setUserName] = React.useState('');
   const [comment, setComment] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     if (id) incrementViews(id);
-    return () => unsubscribe();
   }, [id]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return alert("Please sign in to leave a review");
-    if (userRating === 0) return alert("Please select a rating");
+    if (userRating === 0) return showToast("Пожалуйста, выберите оценку", "info");
 
     setIsSubmitting(true);
     try {
       await submitReview(id!, {
         itemId: id!,
-        userName: user.displayName || 'Anonymous',
+        userName: userName || 'Аноним',
         rating: userRating,
         comment
       });
       setComment('');
+      setUserName('');
       setUserRating(0);
+      showToast("Отзыв опубликован!", "success");
     } catch (error) {
       console.error(error);
+      showToast("Ошибка при публикации отзыва", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (itemLoading) return <div className="max-w-7xl mx-auto p-8 animate-pulse">Loading...</div>;
-  if (!item) return <div className="text-center py-20">Item not found</div>;
+  const handleFavorite = () => {
+    if (!id) return;
+    try {
+      toggleFavorite(id, isFavorite);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (itemLoading) return <div className="max-w-7xl mx-auto p-8 animate-pulse">Загрузка...</div>;
+  if (!item) return <div className="text-center py-20">Ресурс не найден</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600 mb-8 transition-colors">
         <ChevronLeft size={16} />
-        Back to Directory
+        Назад в каталог
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -96,31 +117,42 @@ export const ItemDetail = () => {
                   <span className="text-lg font-bold text-gray-900 ml-2">{item.averageRating.toFixed(1)}</span>
                 </div>
                 <span className="text-gray-400">|</span>
-                <span className="text-sm text-gray-600 font-medium">{item.totalRatings} Reviews</span>
+                <span className="text-sm text-gray-600 font-medium">{item.totalRatings} Отзывов</span>
                 <span className="text-gray-400">|</span>
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <Eye size={16} />
-                  {item.viewsCount} Views
+                  {item.viewsCount} Просмотров
                 </div>
               </div>
-              <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                {item.shortDescription}
-              </p>
-              <a 
-                href={item.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
-              >
-                Visit Official Site
-                <ExternalLink size={20} />
-              </a>
+              <div className="flex flex-wrap gap-4 mb-8">
+                <a 
+                  href={item.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                >
+                  Посетить сайт
+                  <ExternalLink size={20} />
+                </a>
+                <button 
+                  onClick={handleFavorite}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-8 py-4 font-bold rounded-xl transition-all border-2",
+                    isFavorite 
+                      ? "bg-red-50 border-red-200 text-red-600" 
+                      : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                  )}
+                >
+                  <Heart size={20} className={cn(isFavorite && "fill-current")} />
+                  {isFavorite ? 'В избранном' : 'В избранное'}
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="space-y-12">
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">About {item.title}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">О ресурсе {item.title}</h2>
               <div className="prose prose-blue max-w-none text-gray-600">
                 {item.fullDescription?.split('\n')?.map((p, i) => <p key={i} className="mb-4">{p}</p>)}
               </div>
@@ -130,7 +162,7 @@ export const ItemDetail = () => {
               <section className="bg-green-50 p-6 rounded-2xl border border-green-100">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-green-800 mb-4">
                   <CheckCircle2 size={20} />
-                  Pros
+                  Плюсы
                 </h3>
                 <ul className="space-y-3">
                   {item.pros?.map((pro, i) => (
@@ -144,7 +176,7 @@ export const ItemDetail = () => {
               <section className="bg-red-50 p-6 rounded-2xl border border-red-100">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-red-800 mb-4">
                   <XCircle size={20} />
-                  Cons
+                  Минусы
                 </h3>
                 <ul className="space-y-3">
                   {item.cons?.map((con, i) => (
@@ -158,22 +190,22 @@ export const ItemDetail = () => {
             </div>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Reviews</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Отзывы</h2>
               <form onSubmit={handleReviewSubmit} className="bg-white p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-4">Write a Review</h3>
+                <h3 className="font-bold text-gray-900 mb-4">Оставить отзыв</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Your Name (Optional)</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваше имя (опционально)</label>
                     <input 
                       type="text"
                       className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      placeholder="e.g. John Doe"
-                      value={user?.displayName || ''}
-                      onChange={(e) => setUser({ ...user, displayName: e.target.value } as any)}
+                      placeholder="Напр. Иван Иванов"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Your Rating</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваша оценка</label>
                     <RatingStars 
                       rating={userRating} 
                       interactive 
@@ -183,11 +215,11 @@ export const ItemDetail = () => {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Your Comment</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваш комментарий</label>
                   <textarea 
                     className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     rows={4}
-                    placeholder="Share your experience with this resource..."
+                    placeholder="Поделитесь своим опытом использования этого ресурса..."
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     required
@@ -197,7 +229,7 @@ export const ItemDetail = () => {
                   disabled={isSubmitting}
                   className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Post Review'}
+                  {isSubmitting ? 'Отправка...' : 'Опубликовать отзыв'}
                 </button>
               </form>
 
@@ -212,7 +244,7 @@ export const ItemDetail = () => {
                         <div>
                           <h4 className="font-bold text-gray-900">{review.userName}</h4>
                           <p className="text-xs text-gray-500">
-                            {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'MMM d, yyyy') : 'Just now'}
+                            {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'MMM d, yyyy') : 'Только что'}
                           </p>
                         </div>
                       </div>
@@ -221,7 +253,7 @@ export const ItemDetail = () => {
                     <p className="text-gray-600 leading-relaxed">{review.comment}</p>
                   </div>
                 )) : (
-                  <p className="text-center text-gray-500 py-8">No reviews yet. Be the first to review!</p>
+                  <p className="text-center text-gray-500 py-8">Отзывов пока нет. Будьте первым!</p>
                 )}
               </div>
             </section>
@@ -231,24 +263,15 @@ export const ItemDetail = () => {
         {/* Right Column: Sidebar Stats */}
         <div className="space-y-8">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Details</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Детали</h3>
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                   <Layers size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase">Purpose</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase">Назначение</p>
                   <p className="text-sm font-semibold text-gray-900">{item.purpose}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                  <Trophy size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase">Level</p>
-                  <p className="text-sm font-semibold text-gray-900">{item.level}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -256,9 +279,9 @@ export const ItemDetail = () => {
                   <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase">Pricing</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase">Цена</p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {item.pricing} {item.subscriptionPrice && `(${item.subscriptionPrice})`}
+                    {item.pricing === 'Free' ? 'Бесплатно' : item.pricing === 'Paid' ? 'Платно' : item.pricing} {item.subscriptionPrice && `(${item.subscriptionPrice})`}
                   </p>
                 </div>
               </div>
@@ -267,11 +290,26 @@ export const ItemDetail = () => {
                   <Globe size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase">Platforms</p>
-                  <div className="flex gap-2 mt-1">
-                    {item.platforms?.includes('Web') && <Globe size={16} className="text-gray-400" title="Web" />}
-                    {item.platforms?.includes('Android') && <Smartphone size={16} className="text-gray-400" title="Android" />}
-                    {item.platforms?.includes('iOS') && <Smartphone size={16} className="text-gray-400" title="iOS" />}
+                  <p className="text-xs font-bold text-gray-400 uppercase">Платформы</p>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {item.platforms?.includes('Web') && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                        <Globe size={14} className="text-blue-500" />
+                        <span className="text-xs font-bold text-gray-600">Web</span>
+                      </div>
+                    )}
+                    {item.platforms?.includes('Android') && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                        <Smartphone size={14} className="text-green-500" />
+                        <span className="text-xs font-bold text-gray-600">Android</span>
+                      </div>
+                    )}
+                    {item.platforms?.includes('iOS') && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                        <Smartphone size={14} className="text-gray-900" />
+                        <span className="text-xs font-bold text-gray-600">iOS</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -279,10 +317,10 @@ export const ItemDetail = () => {
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Target Audience</h3>
-            <p className="text-sm text-gray-600 mb-6">Perfect for those looking to improve their skills in {item.category.toLowerCase()}.</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Целевая аудитория</h3>
+            <p className="text-sm text-gray-600 mb-6">Идеально подходит для тех, кто хочет улучшить свои навыки в категории {item.category.toLowerCase()}.</p>
             
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Alternatives</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Альтернативы</h3>
             <div className="space-y-3">
               {item.alternatives?.map((alt, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
@@ -292,8 +330,20 @@ export const ItemDetail = () => {
               ))}
             </div>
           </div>
+
+          {relatedItems.length > 0 && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold text-gray-900">Похожие ресурсы</h3>
+              <div className="space-y-4">
+                {relatedItems.map(rel => (
+                  <ItemCard key={rel.id} item={rel} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </div>
   );
 };

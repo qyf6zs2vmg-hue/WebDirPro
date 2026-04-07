@@ -9,14 +9,17 @@ import {
   updateDoc, 
   doc, 
   getDoc,
+  setDoc,
   serverTimestamp,
   increment,
-  limit
+  limit,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { DirectoryItem, Review, Category } from '@/types';
 
-export const useItems = (filters?: { category?: string; type?: string; level?: string; pricing?: string; sortBy?: string }) => {
+export const useItems = (filters?: { category?: string; type?: string; pricing?: string; sortBy?: string }) => {
   const [items, setItems] = React.useState<DirectoryItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -33,9 +36,6 @@ export const useItems = (filters?: { category?: string; type?: string; level?: s
         }
         if (filters.type && filters.type !== 'All') {
           itemsData = itemsData.filter(item => item.type === filters.type);
-        }
-        if (filters.level && filters.level !== 'All') {
-          itemsData = itemsData.filter(item => item.level === filters.level);
         }
         if (filters.pricing && filters.pricing !== 'All') {
           itemsData = itemsData.filter(item => item.pricing === filters.pricing);
@@ -92,11 +92,16 @@ export const useReviews = (itemId: string) => {
     if (!itemId) return;
     const q = query(
       collection(db, 'reviews'), 
-      where('itemId', '==', itemId),
-      orderBy('createdAt', 'desc')
+      where('itemId', '==', itemId)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const reviewsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+      // Client-side sort to avoid index requirement
+      reviewsData.sort((a, b) => {
+        const dateA = a.createdAt?.seconds || 0;
+        const dateB = b.createdAt?.seconds || 0;
+        return dateB - dateA;
+      });
       setReviews(reviewsData);
       setLoading(false);
     });
@@ -149,4 +154,45 @@ export const incrementViews = async (itemId: string) => {
   await updateDoc(itemRef, {
     viewsCount: increment(1)
   });
+};
+
+export const useFavorites = () => {
+  const [favorites, setFavorites] = React.useState<string[]>(() => {
+    const saved = localStorage.getItem('favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('favorites');
+      setFavorites(saved ? JSON.parse(saved) : []);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Custom event for same-window updates
+    window.addEventListener('favoritesUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('favoritesUpdated', handleStorageChange);
+    };
+  }, []);
+
+  return { favorites, loading: false };
+};
+
+export const toggleFavorite = (itemId: string, isFavorite: boolean) => {
+  const saved = localStorage.getItem('favorites');
+  let favorites: string[] = saved ? JSON.parse(saved) : [];
+  
+  if (isFavorite) {
+    favorites = favorites.filter(id => id !== itemId);
+  } else {
+    if (!favorites.includes(itemId)) {
+      favorites.push(itemId);
+    }
+  }
+  
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+  window.dispatchEvent(new Event('favoritesUpdated'));
 };

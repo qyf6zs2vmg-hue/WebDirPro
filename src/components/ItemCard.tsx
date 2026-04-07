@@ -1,14 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Heart } from 'lucide-react';
 import { DirectoryItem } from '@/types';
 import { RatingStars } from './RatingStars';
 import { cn } from '@/lib/utils';
+import { toggleFavorite, useFavorites } from '@/services/firebaseService';
+import { useToast, Toast } from './Toast';
 
 interface ItemCardProps {
   item: DirectoryItem;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
+  const { favorites } = useFavorites();
+  const { toast, showToast, hideToast } = useToast();
+  const isFavorite = favorites.includes(item.id);
+
+  const handleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      toggleFavorite(item.id, isFavorite);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <Link 
       to={`/item/${item.id}`}
@@ -23,12 +40,21 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
         />
         <div className="absolute top-3 left-3 flex gap-2">
           {item.isNew && (
-            <span className="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded">New</span>
+            <span className="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded">Новое</span>
           )}
           {item.isTopRated && (
-            <span className="px-2 py-1 bg-yellow-500 text-white text-[10px] font-bold uppercase tracking-wider rounded">Top Rated</span>
+            <span className="px-2 py-1 bg-yellow-500 text-white text-[10px] font-bold uppercase tracking-wider rounded">Топ рейтинг</span>
           )}
         </div>
+        <button 
+          onClick={handleFavorite}
+          className={cn(
+            "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all",
+            isFavorite ? "bg-red-500 text-white" : "bg-white/50 text-gray-700 hover:bg-white"
+          )}
+        >
+          <Heart size={18} className={cn(isFavorite && "fill-current")} />
+        </button>
       </div>
       
       <div className="p-4 flex flex-col flex-grow">
@@ -51,6 +77,14 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
         <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow">
           {item.shortDescription}
         </p>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {item.platforms?.map(p => (
+            <span key={p} className="text-[10px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase tracking-wider">
+              {p}
+            </span>
+          ))}
+        </div>
         
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
           <span className="text-xs font-medium text-gray-500">
@@ -62,10 +96,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
             item.pricing === 'Freemium' ? "bg-orange-100 text-orange-700" : 
             "bg-blue-100 text-blue-700"
           )}>
-            {item.pricing}
+            {item.pricing === 'Free' ? 'Бесплатно' : item.pricing === 'Paid' ? 'Платно' : item.pricing}
           </span>
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </Link>
   );
 };

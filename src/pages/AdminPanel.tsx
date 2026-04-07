@@ -12,7 +12,15 @@ import {
   Link as LinkIcon,
   Layers,
   Settings,
-  Star
+  Star,
+  BarChart3,
+  TrendingUp,
+  Eye,
+  Users,
+  Inbox,
+  Check,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { 
   collection, 
@@ -22,39 +30,81 @@ import {
   doc, 
   serverTimestamp,
   getDocs,
-  writeBatch
+  writeBatch,
+  onSnapshot,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import { useItems, useCategories } from '@/services/firebaseService';
-import { DirectoryItem, Category, ItemType, Level, PricingType, Platform } from '@/types';
+import { DirectoryItem, Category, ItemType, PricingType, Platform } from '@/types';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { cn } from '@/lib/utils';
+import { ConfirmModal } from '@/components/ConfirmModal';
+import { useToast, Toast } from '@/components/Toast';
 
 export const AdminPanel = () => {
   const [isAdminMode, setIsAdminMode] = React.useState(() => localStorage.getItem('adminMode') === 'true');
   const { items, loading: itemsLoading } = useItems();
   const { categories, loading: catsLoading } = useCategories();
+  const { toast, showToast, hideToast } = useToast();
   
+  const [activeTab, setActiveTab] = React.useState<'items' | 'categories' | 'submissions'>('items');
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editingItem, setEditingItem] = React.useState<Partial<DirectoryItem> | null>(null);
+  const [editingItem, setEditingItem] = React.useState<(Partial<DirectoryItem> & { submissionId?: string }) | null>(null);
   const [isCatEditing, setIsCatEditing] = React.useState(false);
   const [newCatName, setNewCatName] = React.useState('');
+  
+  const [submissions, setSubmissions] = React.useState<any[]>([]);
+  const [prosText, setProsText] = React.useState('');
+  const [consText, setConsText] = React.useState('');
+  const [altsText, setAltsText] = React.useState('');
+
+  const [confirmConfig, setConfirmConfig] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant: 'danger' | 'primary';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    variant: 'primary'
+  });
+
+  const triggerConfirm = (title: string, message: string, onConfirm: () => void, variant: 'danger' | 'primary' = 'danger') => {
+    setConfirmConfig({ isOpen: true, title, message, onConfirm, variant });
+  };
 
   React.useEffect(() => {
-    const checkAdmin = () => {
-      setIsAdminMode(localStorage.getItem('adminMode') === 'true');
-    };
-    window.addEventListener('storage', checkAdmin);
-    return () => window.removeEventListener('storage', checkAdmin);
+    const q = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setSubmissions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
   }, []);
+
+  React.useEffect(() => {
+    if (editingItem) {
+      setProsText(editingItem.pros?.join(', ') || '');
+      setConsText(editingItem.cons?.join(', ') || '');
+      setAltsText(editingItem.alternatives?.join(', ') || '');
+    }
+  }, [editingItem?.id]);
 
   const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
 
     try {
+      const { submissionId, ...rest } = editingItem;
       const itemData = {
-        ...editingItem,
+        ...rest,
+        pros: prosText.split(',').map(s => s.trim()).filter(Boolean),
+        cons: consText.split(',').map(s => s.trim()).filter(Boolean),
+        alternatives: altsText.split(',').map(s => s.trim()).filter(Boolean),
         averageRating: editingItem.averageRating || 0,
         totalRatings: editingItem.totalRatings || 0,
         viewsCount: editingItem.viewsCount || 0,
@@ -66,22 +116,33 @@ export const AdminPanel = () => {
         await updateDoc(doc(db, 'items', editingItem.id), itemData);
       } else {
         await addDoc(collection(db, 'items'), itemData);
+        if (submissionId) {
+          await deleteDoc(doc(db, 'submissions', submissionId));
+        }
       }
       setIsEditing(false);
       setEditingItem(null);
+      showToast(submissionId ? "Заявка одобрена и добавлена!" : "Сохранено успешно!", "success");
     } catch (error) {
       console.error(error);
-      alert("Error saving item");
+      showToast("Ошибка при сохранении", "error");
     }
   };
 
   const handleDeleteItem = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-    try {
-      await deleteDoc(doc(db, 'items', id));
-    } catch (error) {
-      console.error(error);
-    }
+    triggerConfirm(
+      "Удалить ресурс",
+      "Вы уверены, что хотите удалить этот ресурс? Это действие нельзя отменить.",
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'items', id));
+          showToast("Удалено", "success");
+        } catch (error) {
+          console.error(error);
+          showToast("Ошибка при удалении", "error");
+        }
+      }
+    );
   };
 
   const handleAddCategory = async () => {
@@ -90,86 +151,80 @@ export const AdminPanel = () => {
       await addDoc(collection(db, 'categories'), { name: newCatName });
       setNewCatName('');
       setIsCatEditing(false);
+      showToast("Категория добавлена", "success");
     } catch (error) {
       console.error(error);
+      showToast("Ошибка при добавлении категории", "error");
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!window.confirm("Delete category?")) return;
+    triggerConfirm(
+      "Удалить категорию",
+      "Вы уверены, что хотите удалить эту категорию? Ресурсы в этой категории останутся, но их метка категории будет устаревшей.",
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'categories', id));
+          showToast("Категория удалена", "success");
+        } catch (error) {
+          console.error(error);
+          showToast("Ошибка при удалении категории", "error");
+        }
+      }
+    );
+  };
+
+  const handleApproveSubmission = async (sub: any) => {
     try {
-      await deleteDoc(doc(db, 'categories', id));
+      const { id, ...itemData } = sub;
+      await addDoc(collection(db, 'items'), {
+        ...itemData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        averageRating: 0,
+        totalRatings: 0,
+        viewsCount: 0
+      });
+      await deleteDoc(doc(db, 'submissions', id));
+      showToast("Заявка одобрена и добавлена в каталог!", "success");
     } catch (error) {
       console.error(error);
+      showToast("Ошибка при одобрении заявки", "error");
     }
   };
 
-  const seedData = async () => {
-    if (!window.confirm("This will add sample data. Continue?")) return;
-    const batch = writeBatch(db);
-    
-    // Sample Categories
-    const catNames = ['Education', 'Entertainment', 'Programming', 'Tools'];
-    for (const name of catNames) {
-      const catRef = doc(collection(db, 'categories'));
-      batch.set(catRef, { name });
-    }
-
-    // Sample Items
-    const samples = [
-      {
-        title: 'Duolingo',
-        shortDescription: 'The world\'s most popular way to learn a language.',
-        fullDescription: 'Duolingo is the most popular language-learning platform and the most downloaded education app in the world, with more than 500 million users. The company\'s mission is to make education free, fun, and available to all.',
-        category: 'Education',
-        type: 'App',
-        imageUrl: 'https://picsum.photos/seed/duo/800/800',
-        purpose: 'Language Learning',
-        level: 'Beginner',
-        pricing: 'Freemium',
-        subscriptionPrice: '$6.99/mo',
-        platforms: ['Web', 'Android', 'iOS'],
-        pros: ['Fun gamified learning', 'Bite-sized lessons', 'Large variety of languages'],
-        cons: ['Limited grammar depth', 'Hearts system can be annoying'],
-        alternatives: ['Babbel', 'Rosetta Stone', 'Memrise'],
-        link: 'https://www.duolingo.com',
-        averageRating: 4.7,
-        totalRatings: 1250,
-        viewsCount: 5000,
-        isTopRated: true,
-        isNew: false
-      },
-      {
-        title: 'VS Code',
-        shortDescription: 'Code editing. Redefined.',
-        fullDescription: 'Visual Studio Code is a code editor redefined and optimized for building and debugging modern web and cloud applications.',
-        category: 'Programming',
-        type: 'Website',
-        imageUrl: 'https://picsum.photos/seed/vscode/800/800',
-        purpose: 'Coding',
-        level: 'Intermediate',
-        pricing: 'Free',
-        platforms: ['Web'],
-        pros: ['Extremely customizable', 'Huge extension library', 'Great Git integration'],
-        cons: ['Can be resource heavy', 'Complex configuration'],
-        alternatives: ['Sublime Text', 'Atom', 'WebStorm'],
-        link: 'https://code.visualstudio.com',
-        averageRating: 4.9,
-        totalRatings: 3400,
-        viewsCount: 12000,
-        isTopRated: true,
-        isNew: false
+  const handleDeleteSubmission = async (id: string) => {
+    triggerConfirm(
+      "Отклонить заявку",
+      "Вы уверены, что хотите отклонить и удалить эту заявку?",
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'submissions', id));
+          showToast("Заявка отклонена", "success");
+        } catch (error) {
+          console.error(error);
+          showToast("Ошибка при отклонении заявки", "error");
+        }
       }
-    ];
-
-    for (const sample of samples) {
-      const itemRef = doc(collection(db, 'items'));
-      batch.set(itemRef, { ...sample, createdAt: serverTimestamp() });
-    }
-
-    await batch.commit();
-    alert("Seed data added!");
+    );
   };
+
+  const analytics = React.useMemo(() => {
+    if (!items.length) return null;
+    
+    const totalViews = items.reduce((acc, item) => acc + (item.viewsCount || 0), 0);
+    const avgRating = items.reduce((acc, item) => acc + (item.averageRating || 0), 0) / items.length;
+    
+    const catStats = items.reduce((acc, item) => {
+      acc[item.category] = (acc[item.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topItems = [...items].sort((a, b) => (Number(b.viewsCount) || 0) - (Number(a.viewsCount) || 0)).slice(0, 5);
+    const popularCategory = Object.entries(catStats).sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || 'N/A';
+
+    return { totalViews, avgRating, popularCategory, topItems };
+  }, [items]);
 
   if (!isAdminMode) {
     return (
@@ -198,13 +253,6 @@ export const AdminPanel = () => {
         </div>
         <div className="flex gap-3">
           <button 
-            onClick={seedData}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <Database size={18} />
-            Seed Data
-          </button>
-          <button 
             onClick={() => { setIsEditing(true); setEditingItem({}); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -214,15 +262,154 @@ export const AdminPanel = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Categories Management */}
-        <div className="lg:col-span-1">
+      {/* Analytics Overview */}
+      {analytics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                <Eye size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500 uppercase">Total Views</p>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{analytics.totalViews.toLocaleString()}</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                <Star size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500 uppercase">Avg Rating</p>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{analytics.avgRating.toFixed(1)}</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
+                <TrendingUp size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500 uppercase">Popular Cat</p>
+            </div>
+            <p className="text-xl font-bold text-gray-900 truncate">{analytics.popularCategory}</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                <BarChart3 size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500 uppercase">Total Items</p>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{items.length}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-4 mb-8 border-b border-gray-200">
+        <button 
+          onClick={() => setActiveTab('items')}
+          className={cn(
+            "pb-4 px-2 text-sm font-bold transition-all border-b-2",
+            activeTab === 'items' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          )}
+        >
+          Items
+        </button>
+        <button 
+          onClick={() => setActiveTab('categories')}
+          className={cn(
+            "pb-4 px-2 text-sm font-bold transition-all border-b-2",
+            activeTab === 'categories' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          )}
+        >
+          Categories
+        </button>
+        <button 
+          onClick={() => setActiveTab('submissions')}
+          className={cn(
+            "pb-4 px-2 text-sm font-bold transition-all border-b-2 flex items-center gap-2",
+            activeTab === 'submissions' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          )}
+        >
+          Submissions
+          {submissions.length > 0 && (
+            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+              {submissions.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'items' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Items Management */}
+          <div className="lg:col-span-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Item</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Category</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Rating</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {items.map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <img src={item.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                          <div>
+                            <p className="font-bold text-gray-900">{item.title}</p>
+                            <p className="text-xs text-gray-500">{item.type}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded">
+                          {item.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-bold">{item.averageRating.toFixed(1)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => { setEditingItem(item); setIsEditing(true); }}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'categories' && (
+        <div className="max-w-2xl">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Categories</h2>
+              <h2 className="text-lg font-bold text-gray-900">Manage Categories</h2>
               <button 
                 onClick={() => setIsCatEditing(!isCatEditing)}
-                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <Plus size={20} />
               </button>
@@ -232,94 +419,86 @@ export const AdminPanel = () => {
               <div className="flex gap-2 mb-6">
                 <input 
                   type="text" 
-                  placeholder="Cat name..."
-                  className="flex-grow p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  placeholder="Category name..."
+                  className="flex-grow p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                 />
                 <button 
                   onClick={handleAddCategory}
-                  className="p-2 bg-blue-600 text-white rounded-lg"
+                  className="px-4 bg-blue-600 text-white rounded-xl font-bold"
                 >
-                  <Save size={16} />
+                  <Save size={18} />
                 </button>
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {categories.map(cat => (
-                <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl group">
-                  <span className="text-sm font-medium text-gray-700">{cat.name}</span>
+                <div key={cat.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl group">
+                  <span className="font-bold text-gray-700">{cat.name}</span>
                   <button 
                     onClick={() => handleDeleteCategory(cat.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      )}
 
-        {/* Items Management */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Item</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Rating</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {items.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <img src={item.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                        <div>
-                          <p className="font-bold text-gray-900">{item.title}</p>
-                          <p className="text-xs text-gray-500">{item.type}</p>
+      {activeTab === 'submissions' && (
+        <div className="space-y-6">
+          {submissions.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+              <Inbox size={48} className="mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-bold text-gray-900">No new submissions</h3>
+              <p className="text-gray-500">When users suggest resources, they will appear here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {submissions.map(sub => (
+                <div key={sub.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex gap-4">
+                      <img src={sub.imageUrl} alt="" className="w-20 h-20 rounded-xl object-cover border border-gray-100" />
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-gray-900">{sub.title}</h3>
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded">
+                            {sub.type}
+                          </span>
                         </div>
+                        <p className="text-sm text-gray-500 mb-2">{sub.category}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{sub.shortDescription}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded">
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-bold">{item.averageRating.toFixed(1)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => { setEditingItem(item); setIsEditing(true); }}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="flex md:flex-col justify-end gap-2">
+                      <button 
+                        onClick={() => handleApproveSubmission(sub)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Check size={18} />
+                        Approve
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteSubmission(sub.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Edit Modal */}
       {isEditing && (
@@ -409,7 +588,7 @@ export const AdminPanel = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Purpose</label>
                   <input 
@@ -418,19 +597,6 @@ export const AdminPanel = () => {
                     value={editingItem?.purpose || ''}
                     onChange={(e) => setEditingItem({ ...editingItem, purpose: e.target.value })}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Level</label>
-                  <select 
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl"
-                    value={editingItem?.level || ''}
-                    onChange={(e) => setEditingItem({ ...editingItem, level: e.target.value as Level })}
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Elementary">Elementary</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pricing</label>
@@ -468,6 +634,63 @@ export const AdminPanel = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pros (Comma separated)</label>
+                  <textarea 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl"
+                    rows={2}
+                    value={prosText}
+                    onChange={(e) => setProsText(e.target.value)}
+                    placeholder="Fast, Free, Easy..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Cons (Comma separated)</label>
+                  <textarea 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl"
+                    rows={2}
+                    value={consText}
+                    onChange={(e) => setConsText(e.target.value)}
+                    placeholder="Slow, Expensive..."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Platforms</label>
+                  <div className="flex flex-wrap gap-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                    {['Web', 'Android', 'iOS'].map((p) => (
+                      <label key={p} className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={editingItem?.platforms?.includes(p as Platform) || false}
+                          onChange={(e) => {
+                            const current = editingItem?.platforms || [];
+                            const next = e.target.checked 
+                              ? [...current, p as Platform]
+                              : current.filter(x => x !== p);
+                            setEditingItem({ ...editingItem, platforms: next });
+                          }}
+                        />
+                        <span className="text-sm">{p}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Alternatives (Comma separated)</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl"
+                    value={altsText}
+                    onChange={(e) => setAltsText(e.target.value)}
+                    placeholder="Alternative 1, Alternative 2..."
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-4 pt-8 border-t border-gray-100">
                 <button 
                   type="button"
@@ -486,6 +709,23 @@ export const AdminPanel = () => {
             </form>
           </div>
         </div>
+      )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+      />
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={hideToast} 
+        />
       )}
     </div>
   );

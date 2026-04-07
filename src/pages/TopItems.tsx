@@ -21,10 +21,10 @@ export const TopItems = () => {
           <Trophy size={32} />
         </div>
         <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl mb-4">
-          The Hall of <span className="text-yellow-500">Fame</span>
+          Зал <span className="text-yellow-500">Славы</span>
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          The highest-rated resources in our directory, as voted by our community.
+          Самые высокооцененные ресурсы в нашем каталоге по мнению сообщества.
         </p>
       </div>
 
@@ -35,7 +35,7 @@ export const TopItems = () => {
           {top3[1] && (
             <div className="md:mt-12 order-2 md:order-1">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-gray-200 text-gray-700 text-sm font-bold rounded-full">#2 Silver</span>
+                <span className="inline-block px-4 py-1 bg-gray-200 text-gray-700 text-sm font-bold rounded-full">#2 Серебро</span>
               </div>
               <ItemCard item={top3[1]} />
             </div>
@@ -44,7 +44,7 @@ export const TopItems = () => {
           {top3[0] && (
             <div className="order-1 md:order-2 scale-105 z-10">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-yellow-400 text-white text-sm font-bold rounded-full shadow-lg shadow-yellow-400/20">#1 Gold</span>
+                <span className="inline-block px-4 py-1 bg-yellow-400 text-white text-sm font-bold rounded-full shadow-lg shadow-yellow-400/20">#1 Золото</span>
               </div>
               <ItemCard item={top3[0]} />
             </div>
@@ -53,7 +53,7 @@ export const TopItems = () => {
           {top3[2] && (
             <div className="md:mt-20 order-3">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-orange-200 text-orange-800 text-sm font-bold rounded-full">#3 Bronze</span>
+                <span className="inline-block px-4 py-1 bg-orange-200 text-orange-800 text-sm font-bold rounded-full">#3 Бронза</span>
               </div>
               <ItemCard item={top3[2]} />
             </div>
@@ -66,7 +66,7 @@ export const TopItems = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <TrendingUp className="text-blue-600" />
-            Top by Category
+            Топ по категориям
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar w-full md:w-auto">
             <button 
@@ -76,7 +76,7 @@ export const TopItems = () => {
                 selectedCategory === 'All' ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-400"
               )}
             >
-              All
+              Все
             </button>
             {categories.map(cat => (
               <button 
@@ -108,7 +108,7 @@ export const TopItems = () => {
         ) : (
           <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300">
             <Award className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500 font-medium">No items found in this category yet.</p>
+            <p className="text-gray-500 font-medium">В этой категории пока нет ресурсов.</p>
           </div>
         )}
       </div>

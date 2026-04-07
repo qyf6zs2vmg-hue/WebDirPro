@@ -4,7 +4,6 @@ export interface Category {
 }
 
 export type ItemType = 'Website' | 'App' | 'Course' | 'YouTube';
-export type Level = 'Beginner' | 'Elementary' | 'Intermediate' | 'Advanced';
 export type PricingType = 'Free' | 'Freemium' | 'Paid';
 export type Platform = 'Web' | 'Android' | 'iOS';
 
@@ -26,7 +25,6 @@ export interface DirectoryItem {
   type: ItemType;
   imageUrl: string;
   purpose: string;
-  level: Level;
   pricing: PricingType;
   subscriptionPrice?: string;
   platforms: Platform[];
