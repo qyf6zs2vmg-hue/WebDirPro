@@ -1,17 +1,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, Star, ExternalLink } from 'lucide-react';
 import { DirectoryItem } from '@/types';
 import { RatingStars } from './RatingStars';
 import { cn } from '@/lib/utils';
 import { toggleFavorite, useFavorites } from '@/services/firebaseService';
+import { trackItemView } from '@/services/trackingService';
 import { useToast, Toast } from './Toast';
 
 interface ItemCardProps {
   item: DirectoryItem;
+  compact?: boolean;
 }
 
-export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
+export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => {
   const { favorites } = useFavorites();
   const { toast, showToast, hideToast } = useToast();
   const isFavorite = favorites.includes(item.id);
@@ -26,75 +28,93 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
     }
   };
 
+  const handleTrackView = () => {
+    trackItemView(item);
+  };
+
   return (
     <Link 
       to={`/item/${item.id}`}
-      className="group block bg-white rounded-xl border border-gray-200 overflow-hidden card-shadow flex flex-col h-full cursor-pointer no-underline"
+      onClick={handleTrackView}
+      className={cn(
+        "group block bg-card rounded-2xl border border-border overflow-hidden card-shadow flex flex-col h-full cursor-pointer no-underline transition-all duration-300",
+        compact ? "p-2" : "p-0"
+      )}
     >
-      <div className="relative aspect-video-custom overflow-hidden bg-gray-100">
+      <div className={cn(
+        "relative overflow-hidden bg-input",
+        compact ? "aspect-square rounded-xl" : "aspect-video-custom"
+      )}>
         <img 
           src={item.imageUrl || `https://picsum.photos/seed/${item.id}/800/450`} 
           alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-3 left-3 flex gap-2">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+          <span className="text-white text-xs font-bold flex items-center gap-1">
+            Подробнее <ExternalLink size={12} />
+          </span>
+        </div>
+        
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
           {item.isNew && (
-            <span className="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded">Новое</span>
+            <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg shadow-blue-500/20">Новое</span>
           )}
           {item.isTopRated && (
-            <span className="px-2 py-1 bg-yellow-500 text-white text-[10px] font-bold uppercase tracking-wider rounded">Топ рейтинг</span>
+            <span className="px-2 py-0.5 bg-yellow-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg shadow-yellow-500/20">Топ</span>
           )}
         </div>
+        
         <button 
           onClick={handleFavorite}
           className={cn(
-            "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all",
-            isFavorite ? "bg-red-500 text-white" : "bg-white/50 text-gray-700 hover:bg-white"
+            "absolute top-2 right-2 p-2 rounded-full backdrop-blur-md transition-all duration-300",
+            isFavorite 
+              ? "bg-red-500 text-white shadow-lg shadow-red-500/20" 
+              : "bg-white/20 text-white hover:bg-white/40 border border-white/30"
           )}
         >
-          <Heart size={18} className={cn(isFavorite && "fill-current")} />
+          <Heart size={14} className={cn(isFavorite && "fill-current")} />
         </button>
       </div>
       
-      <div className="p-4 flex flex-col flex-grow">
-        <div className="flex justify-between items-start mb-1">
-          <span className="text-xs font-medium text-blue-600 uppercase tracking-wider">
+      <div className={cn("flex flex-col flex-grow", compact ? "p-2" : "p-4")}>
+        <div className="flex justify-between items-start mb-1.5">
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
             {item.category}
           </span>
           <div className="flex items-center gap-1">
-            <RatingStars rating={item.averageRating} />
-            <span className="text-xs text-gray-500 font-medium">
-              ({item.averageRating.toFixed(1)})
+            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold">
+              {item.averageRating.toFixed(1)}
             </span>
           </div>
         </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+        <h3 className={cn(
+          "font-bold text-foreground mb-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1",
+          compact ? "text-sm" : "text-base"
+        )}>
           {item.title}
         </h3>
         
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow">
-          {item.shortDescription}
-        </p>
+        {!compact && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
+            {item.shortDescription}
+          </p>
+        )}
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {item.platforms?.map(p => (
-            <span key={p} className="text-[10px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase tracking-wider">
-              {p}
-            </span>
-          ))}
-        </div>
-        
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-          <span className="text-xs font-medium text-gray-500">
+        <div className="flex items-center justify-between pt-3 border-t border-border mt-auto">
+          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             {item.type}
           </span>
           <span className={cn(
-            "text-xs font-bold px-2 py-0.5 rounded",
-            item.pricing === 'Free' ? "bg-green-100 text-green-700" : 
-            item.pricing === 'Freemium' ? "bg-orange-100 text-orange-700" : 
-            "bg-blue-100 text-blue-700"
+            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+            item.pricing === 'Free' ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400" : 
+            item.pricing === 'Freemium' ? "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400" : 
+            "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
           )}>
             {item.pricing === 'Free' ? 'Бесплатно' : item.pricing === 'Paid' ? 'Платно' : item.pricing}
           </span>

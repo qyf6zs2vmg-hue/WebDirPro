@@ -19,13 +19,13 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
   return (
     <div className={cn(
       "fixed bottom-4 right-4 z-[300] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border animate-in slide-in-from-right-10 duration-300",
-      type === 'success' ? "bg-green-50 border-green-200 text-green-800" :
-      type === 'error' ? "bg-red-50 border-red-200 text-red-800" :
-      "bg-blue-50 border-blue-200 text-blue-800"
+      type === 'success' ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30 text-green-800 dark:text-green-400" :
+      type === 'error' ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30 text-red-800 dark:text-red-400" :
+      "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30 text-blue-800 dark:text-blue-400"
     )}>
       {type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
       <p className="text-sm font-bold">{message}</p>
-      <button onClick={onClose} className="p-1 hover:bg-black/5 rounded-full transition-colors">
+      <button onClick={onClose} className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
         <X size={16} />
       </button>
     </div>

@@ -46,6 +46,9 @@ export const ItemDetail = () => {
     if (id) incrementViews(id);
   }, [id]);
 
+  const [showReviews, setShowReviews] = React.useState(false);
+  const [showReviewForm, setShowReviewForm] = React.useState(false);
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userRating === 0) return showToast("Пожалуйста, выберите оценку", "info");
@@ -61,6 +64,8 @@ export const ItemDetail = () => {
       setComment('');
       setUserName('');
       setUserRating(0);
+      setShowReviewForm(false);
+      setShowReviews(true);
       showToast("Отзыв опубликован!", "success");
     } catch (error) {
       console.error(error);
@@ -189,73 +194,110 @@ export const ItemDetail = () => {
               </section>
             </div>
 
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Отзывы</h2>
-              <form onSubmit={handleReviewSubmit} className="bg-white p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-4">Оставить отзыв</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваше имя (опционально)</label>
-                    <input 
-                      type="text"
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      placeholder="Напр. Иван Иванов"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваша оценка</label>
-                    <RatingStars 
-                      rating={userRating} 
-                      interactive 
-                      onRate={setUserRating} 
-                      className="scale-150 origin-left mb-2" 
-                    />
-                  </div>
+            <section className="border-t border-gray-100 pt-12">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <h2 className="text-2xl font-bold text-gray-900">Отзывы ({item.totalRatings})</h2>
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <button 
+                    onClick={() => setShowReviews(!showReviews)}
+                    className="flex-1 sm:flex-none px-4 py-2 bg-gray-50 text-gray-700 font-bold rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors text-sm"
+                  >
+                    {showReviews ? 'Скрыть отзывы' : 'Показать отзывы'}
+                  </button>
+                  <button 
+                    onClick={() => setShowReviewForm(!showReviewForm)}
+                    className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Написать отзыв
+                  </button>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваш комментарий</label>
-                  <textarea 
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    rows={4}
-                    placeholder="Поделитесь своим опытом использования этого ресурса..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    required
-                  />
-                </div>
-                <button 
-                  disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Отправка...' : 'Опубликовать отзыв'}
-                </button>
-              </form>
-
-              <div className="space-y-6">
-                {reviews.length > 0 ? reviews.map(review => (
-                  <div key={review.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                          {review.userName?.[0] || 'A'}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900">{review.userName}</h4>
-                          <p className="text-xs text-gray-500">
-                            {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'MMM d, yyyy') : 'Только что'}
-                          </p>
-                        </div>
-                      </div>
-                      <RatingStars rating={review.rating} />
-                    </div>
-                    <p className="text-gray-600 leading-relaxed">{review.comment}</p>
-                  </div>
-                )) : (
-                  <p className="text-center text-gray-500 py-8">Отзывов пока нет. Будьте первым!</p>
-                )}
               </div>
+
+              {showReviewForm && (
+                <form onSubmit={handleReviewSubmit} className="bg-white p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-gray-900 uppercase text-xs tracking-wider">Новый отзыв</h3>
+                    <button type="button" onClick={() => setShowReviewForm(false)} className="text-gray-400 hover:text-gray-600">
+                      <XCircle size={20} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваше имя (опционально)</label>
+                      <input 
+                        type="text"
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="Напр. Иван Иванов"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваша оценка</label>
+                      <RatingStars 
+                        rating={userRating} 
+                        interactive 
+                        onRate={setUserRating} 
+                        className="scale-150 origin-left mb-2" 
+                      />
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваш комментарий</label>
+                    <textarea 
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      rows={4}
+                      placeholder="Поделитесь своим опытом использования этого ресурса..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setShowReviewForm(false)}
+                      className="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Отмена
+                    </button>
+                    <button 
+                      disabled={isSubmitting}
+                      className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Отправка...' : 'Опубликовать'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {showReviews && (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                  {reviews.length > 0 ? reviews.map(review => (
+                    <div key={review.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+                            {review.userName?.[0] || 'A'}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-gray-900">{review.userName}</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">
+                              {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'dd.MM.yyyy') : 'Только что'}
+                            </p>
+                          </div>
+                        </div>
+                        <RatingStars rating={review.rating} />
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                    </div>
+                  )) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-gray-500">Отзывов пока нет. Будьте первым!</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           </div>
         </div>

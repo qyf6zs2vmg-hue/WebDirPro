@@ -7,7 +7,7 @@ import {
   useNavigate,
   useLocation
 } from 'react-router-dom';
-import { Search, Menu, X, LayoutGrid, Trophy, Settings, User, AlertCircle, Send, ChevronDown } from 'lucide-react';
+import { Search, Menu, X, LayoutGrid, Trophy, Settings, User, AlertCircle, Send, ChevronDown, Heart } from 'lucide-react';
 import { auth } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Home } from './pages/Home';
@@ -17,6 +17,8 @@ import { AdminPanel } from './pages/AdminPanel';
 import { SubmitItem } from './pages/SubmitItem';
 import { useCategories } from './services/firebaseService';
 import { cn } from './lib/utils';
+import { ThemeProvider } from './context/ThemeContext';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const Header = () => {
   const [isAdminMode, setIsAdminMode] = React.useState(() => localStorage.getItem('adminMode') === 'true');
@@ -31,6 +33,24 @@ const Header = () => {
   const location = useLocation();
   const catRef = React.useRef<HTMLDivElement>(null);
 
+  // Keyboard shortcut for admin: Ctrl + Shift + A
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        if (isAdminMode) {
+          setIsAdminMode(false);
+          localStorage.setItem('adminMode', 'false');
+          if (location.pathname === '/admin') navigate('/');
+        } else {
+          setShowPasswordModal(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAdminMode, location.pathname, navigate]);
+
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (catRef.current && !catRef.current.contains(event.target as Node)) {
@@ -41,18 +61,6 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleAdminToggle = () => {
-    if (isAdminMode) {
-      setIsAdminMode(false);
-      localStorage.setItem('adminMode', 'false');
-      if (location.pathname === '/admin') {
-        navigate('/');
-      }
-    } else {
-      setShowPasswordModal(true);
-    }
-  };
-
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '1235813213455') {
@@ -61,6 +69,7 @@ const Header = () => {
       setShowPasswordModal(false);
       setPasswordInput('');
       setPasswordError(false);
+      navigate('/admin');
     } else {
       setPasswordError(true);
     }
@@ -69,8 +78,8 @@ const Header = () => {
   const navItems = [
     { name: 'Каталог', path: '/', icon: LayoutGrid },
     { name: 'Топ рейтинга', path: '/top', icon: Trophy },
-    { name: 'Предложить ресурс', path: '/submit', icon: Send },
-    { name: 'Админ-панель', path: '/admin', icon: Settings, adminOnly: true },
+    { name: 'Предложить', path: '/submit', icon: Send },
+    { name: 'Админ', path: '/admin', icon: Settings, adminOnly: true },
   ];
 
   return (
@@ -79,10 +88,10 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <LayoutGrid className="text-white" size={20} />
               </div>
-              <span className="text-xl font-bold tracking-tight text-gray-900 hidden sm:block">
+              <span className="text-xl font-bold tracking-tight text-foreground hidden sm:block">
                 WebDir<span className="text-blue-600">Pro</span>
               </span>
             </Link>
@@ -93,7 +102,7 @@ const Header = () => {
                 onClick={() => setIsCatOpen(!isCatOpen)}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
-                  isCatOpen ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"
+                  isCatOpen ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
               >
                 <LayoutGrid size={18} />
@@ -102,11 +111,11 @@ const Header = () => {
               </button>
 
               {isCatOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 grid grid-cols-1 gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-2xl shadow-2xl border border-border p-2 grid grid-cols-1 gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
                   <Link 
                     to="/" 
                     onClick={() => setIsCatOpen(false)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-all"
                   >
                     Все ресурсы
                   </Link>
@@ -115,7 +124,7 @@ const Header = () => {
                       key={cat.id}
                       to={`/?category=${encodeURIComponent(cat.name)}`}
                       onClick={() => setIsCatOpen(false)}
-                      className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                      className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-all"
                     >
                       {cat.name}
                     </Link>
@@ -135,7 +144,7 @@ const Header = () => {
                     "flex items-center gap-2 text-sm font-bold transition-colors",
                     location.pathname === item.path 
                       ? "text-blue-600" 
-                      : "text-gray-600 hover:text-gray-900"
+                      : "text-gray-600 dark:text-gray-400 hover:text-foreground"
                   )}
                 >
                   <item.icon size={18} />
@@ -145,22 +154,11 @@ const Header = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleAdminToggle}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all border",
-                isAdminMode 
-                  ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" 
-                  : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-              )}
-            >
-              <Settings size={18} />
-              {isAdminMode ? 'Выйти из админа' : 'Админ'}
-            </button>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <ThemeToggle />
             
             <button 
-              className="md:hidden p-2 text-gray-600"
+              className="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -172,12 +170,12 @@ const Header = () => {
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8">
+          <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl p-8 border border-border">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Вход для админа</h2>
+              <h2 className="text-xl font-bold text-foreground">Вход для админа</h2>
               <button 
                 onClick={() => { setShowPasswordModal(false); setPasswordError(false); setPasswordInput(''); }}
-                className="p-1 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100"
+                className="p-1 text-gray-400 hover:text-foreground rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <X size={20} />
               </button>
@@ -189,8 +187,8 @@ const Header = () => {
                   type="password" 
                   autoFocus
                   className={cn(
-                    "w-full p-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all",
-                    passwordError ? "border-red-500 focus:ring-red-500/20" : "border-gray-200 focus:ring-blue-500/20"
+                    "w-full p-3 bg-input border rounded-xl focus:outline-none focus:ring-2 transition-all text-foreground",
+                    passwordError ? "border-red-500 focus:ring-red-500/20" : "border-border focus:ring-blue-500/20"
                   )}
                   placeholder="•••••••••••••"
                   value={passwordInput}
@@ -214,7 +212,7 @@ const Header = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 py-4 px-4 space-y-2">
+        <div className="md:hidden bg-card border-t border-border py-4 px-4 space-y-2 animate-in slide-in-from-top-4 duration-300">
           <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Навигация</div>
           {navItems.map((item) => (
             (!item.adminOnly || isAdminMode) && (
@@ -225,8 +223,8 @@ const Header = () => {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium",
                   location.pathname === item.path 
-                    ? "bg-blue-50 text-blue-600" 
-                    : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
               >
                 <item.icon size={20} />
@@ -235,14 +233,14 @@ const Header = () => {
             )
           ))}
           
-          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-t border-gray-50">Категории</div>
+          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-t border-border">Категории</div>
           <div className="grid grid-cols-2 gap-2">
             {categories.map(cat => (
               <Link
                 key={cat.id}
                 to={`/?category=${encodeURIComponent(cat.name)}`}
                 onClick={() => setIsMenuOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 {cat.name}
               </Link>
@@ -256,26 +254,28 @@ const Header = () => {
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/item/:id" element={<ItemDetail />} />
-            <Route path="/top" element={<TopItems />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/submit" element={<SubmitItem />} />
-          </Routes>
-        </main>
-        <footer className="bg-white border-t border-gray-200 py-12 mt-20">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} WebDirPro. Профессиональная платформа каталогов.
-            </p>
-          </div>
-        </footer>
-      </div>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+          <Header />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/item/:id" element={<ItemDetail />} />
+              <Route path="/top" element={<TopItems />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/submit" element={<SubmitItem />} />
+            </Routes>
+          </main>
+          <footer className="bg-card border-t border-border py-12 mt-20">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                &copy; {new Date().getFullYear()} WebDirPro. Профессиональная платформа каталогов.
+              </p>
+            </div>
+          </footer>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
