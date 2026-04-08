@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast, Toast } from '@/components/Toast';
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, TranslatedText } from '@/context/LanguageContext';
 import { trackOutboundLink, trackAddToFavorite } from '@/lib/analytics';
 import { isUniqueView, isUniqueClick, addToClickHistory } from '@/services/trackingService';
 
@@ -121,17 +121,17 @@ export const ItemDetail = () => {
   if (!item) return <div className="text-center py-20">{t('home.no_results')}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-8 transition-colors">
-        <ChevronLeft size={16} />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <Link to="/" className="inline-flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors">
+        <ChevronLeft size={14} />
         {t('submit.back')}
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Info */}
         <div className="lg:col-span-2">
-          <div className="flex flex-col md:flex-row gap-8 mb-12">
-            <div className="w-full md:w-1/3 aspect-video-custom md:aspect-square rounded-2xl overflow-hidden border border-border shadow-sm">
+          <div className="flex flex-col md:flex-row gap-6 mb-8">
+            <div className="w-full md:w-1/4 aspect-video-custom md:aspect-square rounded-xl overflow-hidden border border-border shadow-sm">
               <img 
                 src={item.imageUrl || `https://picsum.photos/seed/${item.id}/800/800`} 
                 alt={item.title}
@@ -142,100 +142,103 @@ export const ItemDetail = () => {
             <div className="flex-grow">
               <div className="flex flex-wrap gap-2 mb-4">
                 <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider rounded-full">
-                  {item.category}
+                  <TranslatedText text={item.category} />
                 </span>
                 <span className="px-3 py-1 bg-input text-gray-600 dark:text-gray-400 text-xs font-bold uppercase tracking-wider rounded-full">
                   {item.type}
                 </span>
               </div>
-              <h1 className="text-4xl font-bold text-foreground mb-4">{item.title}</h1>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <RatingStars rating={item.averageRating} className="scale-125 origin-left" />
-                  <span className="text-lg font-bold text-foreground ml-2">{item.averageRating.toFixed(1)}</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                <TranslatedText text={item.title} />
+              </h1>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-1.5">
+                  <RatingStars rating={item.averageRating} className="scale-110 origin-left" />
+                  <span className="text-base font-bold text-foreground ml-1">{item.averageRating.toFixed(1)}</span>
                 </div>
                 <span className="text-gray-300 dark:text-gray-800">|</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{item.totalRatings} {t('item.reviews_count')}</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{item.totalRatings} {t('item.reviews_count')}</span>
                 <span className="text-gray-300 dark:text-gray-800">|</span>
-                <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  <Eye size={16} />
-                  {item.viewsCount || 0} {t('item.views')}
-                </div>
-                <span className="text-gray-300 dark:text-gray-800">|</span>
-                <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  <ExternalLink size={16} />
-                  {item.clicksCount || 0} {t('item.clicks')}
+                <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                  <Eye size={14} />
+                  {item.viewsCount || 0}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-4 mb-8">
+              <div className="flex flex-wrap gap-3 mb-6">
                 <a 
                   href={item.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   onClick={handleVisitSite}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                 >
                   {t('item.visit')}
-                  <ExternalLink size={20} />
+                  <ExternalLink size={16} />
                 </a>
                 <button 
                   onClick={handleFavorite}
                   className={cn(
-                    "inline-flex items-center gap-2 px-8 py-4 font-bold rounded-xl transition-all border-2",
+                    "inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-lg transition-all border-2",
                     isFavorite 
                       ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400" 
                       : "bg-card border-border text-foreground hover:bg-input"
                   )}
                 >
-                  <Heart size={20} className={cn(isFavorite && "fill-current")} />
+                  <Heart size={16} className={cn(isFavorite && "fill-current")} />
                   {isFavorite ? t('item.favorite.remove') : t('item.favorite.add')}
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="space-y-12">
+          <div className="space-y-8">
             <section>
-              <h2 className="text-2xl font-bold text-foreground mb-4">{t('item.about')} {item.title}</h2>
-              <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-400">
-                {item.fullDescription?.split('\n')?.map((p, i) => <p key={i} className="mb-4">{p}</p>)}
+              <h2 className="text-xl font-bold text-foreground mb-3">
+                {t('item.about')} <TranslatedText text={item.title} />
+              </h2>
+              <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 text-sm">
+                {item.fullDescription?.split('\n')?.map((p, i) => (
+                  <p key={i} className="mb-3">
+                    <TranslatedText text={p} />
+                  </p>
+                ))}
               </div>
             </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <section className="bg-green-50 dark:bg-green-900/10 p-6 rounded-2xl border border-green-100 dark:border-green-900/20">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-green-800 dark:text-green-400 mb-4">
-                  <CheckCircle2 size={20} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <section className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-900/20">
+                <h3 className="flex items-center gap-2 text-base font-bold text-green-800 dark:text-green-400 mb-3">
+                  <CheckCircle2 size={18} />
                   {t('item.pros')}
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {item.pros?.map((pro, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-green-700 dark:text-green-300/80">
-                      <div className="mt-1 w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0" />
-                      {pro}
+                    <li key={i} className="flex items-start gap-2 text-xs text-green-700 dark:text-green-300/80">
+                      <div className="mt-1 w-1 h-1 bg-green-500 rounded-full flex-shrink-0" />
+                      <TranslatedText text={pro} />
                     </li>
                   ))}
                 </ul>
               </section>
-              <section className="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/20">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-red-800 dark:text-red-400 mb-4">
-                  <XCircle size={20} />
+              <section className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/20">
+                <h3 className="flex items-center gap-2 text-base font-bold text-red-800 dark:text-red-400 mb-3">
+                  <XCircle size={18} />
                   {t('item.cons')}
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {item.cons?.map((con, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-red-700 dark:text-red-300/80">
-                      <div className="mt-1 w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
-                      {con}
+                    <li key={i} className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300/80">
+                      <div className="mt-1 w-1 h-1 bg-red-500 rounded-full flex-shrink-0" />
+                      <TranslatedText text={con} />
                     </li>
                   ))}
                 </ul>
               </section>
             </div>
 
-            <section className="border-t border-border pt-12">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-foreground">{t('item.reviews')} ({item.totalRatings})</h2>
+            <section className="border-t border-border pt-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-foreground">{t('item.reviews')} ({item.totalRatings})</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     onClick={() => setShowReviews(!showReviews)}
@@ -328,7 +331,9 @@ export const ItemDetail = () => {
                         </div>
                         <RatingStars rating={review.rating} />
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{review.comment}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                        <TranslatedText text={review.comment} />
+                      </p>
                     </div>
                   )) : (
                     <div className="text-center py-12 bg-input rounded-2xl border border-dashed border-border">
@@ -342,53 +347,55 @@ export const ItemDetail = () => {
         </div>
 
         {/* Right Column: Sidebar Stats */}
-        <div className="space-y-8">
-          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <h3 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">{t('item.details')}</h3>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                  <Layers size={20} />
+        <div className="space-y-6">
+          <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
+            <h3 className="text-base font-bold text-foreground mb-4 border-b border-border pb-2">{t('item.details')}</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Layers size={16} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.purpose')}</p>
-                  <p className="text-sm font-semibold text-foreground">{item.purpose}</p>
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.purpose')}</p>
+                  <p className="text-xs font-semibold text-foreground">
+                    <TranslatedText text={item.purpose} />
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                  <Calendar size={20} />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Calendar size={16} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.pricing')}</p>
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.pricing')}</p>
+                  <p className="text-xs font-semibold text-foreground">
                     {item.pricing === 'Free' ? t('item.pricing.free') : item.pricing === 'Paid' ? t('item.pricing.paid') : item.pricing} {item.subscriptionPrice && `(${item.subscriptionPrice})`}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                  <Globe size={20} />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Globe size={16} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.platforms')}</p>
-                  <div className="flex flex-wrap gap-3 mt-2">
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.platforms')}</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {item.platforms?.includes('Web') && (
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-input rounded-lg border border-border">
-                        <Globe size={14} className="text-blue-500" />
-                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Web</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-input rounded-md border border-border">
+                        <Globe size={12} className="text-blue-500" />
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">Web</span>
                       </div>
                     )}
                     {item.platforms?.includes('Android') && (
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-input rounded-lg border border-border">
-                        <Smartphone size={14} className="text-green-500" />
-                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Android</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-input rounded-md border border-border">
+                        <Smartphone size={12} className="text-green-500" />
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">Android</span>
                       </div>
                     )}
                     {item.platforms?.includes('iOS') && (
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-input rounded-lg border border-border">
-                        <Smartphone size={14} className="text-foreground" />
-                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400">iOS</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-input rounded-md border border-border">
+                        <Smartphone size={12} className="text-foreground" />
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">iOS</span>
                       </div>
                     )}
                   </div>
@@ -434,7 +441,7 @@ export const ItemDetail = () => {
               {item.alternatives?.map((alt, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <ArrowRight size={14} className="text-blue-500" />
-                  {alt}
+                  <TranslatedText text={alt} />
                 </div>
               ))}
             </div>

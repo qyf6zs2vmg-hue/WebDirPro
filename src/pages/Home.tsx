@@ -7,7 +7,7 @@ import { SkeletonItemCard } from '@/components/SkeletonItemCard';
 import { cn } from '@/lib/utils';
 import { getRecommendedItems, getRecentlyViewed, trackSearchQuery } from '@/services/trackingService';
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, TranslatedText } from '@/context/LanguageContext';
 import { trackSearch } from '@/lib/analytics';
 
 export const Home = () => {
@@ -83,19 +83,19 @@ export const Home = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       {/* Hero Section - Compact */}
-      <div className="relative mb-10 py-12 px-6 rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-900 dark:to-indigo-950 overflow-hidden shadow-2xl shadow-blue-500/20">
+      <div className="relative mb-6 py-8 px-6 rounded-[1.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-900 dark:to-indigo-950 overflow-hidden shadow-2xl shadow-blue-500/20">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px] dark:bg-blue-400" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[100px] dark:bg-indigo-400" />
         </div>
         
-        <div className="relative z-10 text-center max-w-3xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4 leading-tight">
+        <div className="relative z-10 text-center max-w-2xl mx-auto">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2 leading-tight">
             {t('home.hero.title')}
           </h1>
-          <p className="text-blue-100 dark:text-blue-200/80 text-sm sm:text-base font-medium mb-8 opacity-90">
+          <p className="text-blue-100 dark:text-blue-200/80 text-xs sm:text-sm font-medium mb-6 opacity-90">
             {t('home.hero.subtitle')}
           </p>
 
@@ -105,7 +105,7 @@ export const Home = () => {
             <input 
               type="text" 
               placeholder={placeholder}
-              className="w-full pl-12 pr-4 py-4 bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl text-white placeholder:text-blue-200 dark:placeholder:text-blue-300/50 focus:outline-none focus:ring-4 focus:ring-white/10 dark:focus:ring-blue-500/20 focus:bg-white/20 dark:focus:bg-black/30 transition-all shadow-xl"
+              className="w-full pl-10 pr-4 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl text-white placeholder:text-blue-200 dark:placeholder:text-blue-300/50 focus:outline-none focus:ring-4 focus:ring-white/10 dark:focus:ring-blue-500/20 focus:bg-white/20 dark:focus:bg-black/30 transition-all shadow-xl text-sm"
               value={searchQuery}
               onChange={handleSearch}
             />
@@ -116,14 +116,14 @@ export const Home = () => {
 
       {/* Recommendations Section */}
       {!searchQuery && !loading && recommendedItems.length > 0 && filters.category === 'All' && (
-        <section className="mb-12">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <Sparkles className="text-blue-600 dark:text-blue-400" size={20} />
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <Sparkles className="text-blue-600 dark:text-blue-400" size={18} />
             </div>
-            <h2 className="text-xl font-bold text-foreground">{t('home.recommended')}</h2>
+            <h2 className="text-lg font-bold text-foreground">{t('home.recommended')}</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {recommendedItems.map(item => (
               <ItemCard key={item.id} item={item} compact />
             ))}
@@ -181,7 +181,7 @@ export const Home = () => {
                         : "text-gray-600 dark:text-gray-400 hover:text-foreground"
                     )}
                   >
-                    {cat.name}
+                    <TranslatedText text={cat.name} />
                   </button>
                 ))}
               </div>
@@ -191,32 +191,32 @@ export const Home = () => {
 
       {/* Grid Area */}
       <div className="flex-grow">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-            <LayoutGrid className="text-indigo-600 dark:text-indigo-400" size={20} />
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+            <LayoutGrid className="text-indigo-600 dark:text-indigo-400" size={18} />
           </div>
-          <h2 className="text-xl font-bold text-foreground">{t('home.catalog')}</h2>
+          <h2 className="text-lg font-bold text-foreground">{t('home.catalog')}</h2>
         </div>
           {/* Mobile Filter Controls */}
-          <div className="lg:hidden flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+          <div className="lg:hidden flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-sm whitespace-nowrap transition-all",
+                "flex items-center gap-2 px-3 py-2 rounded-lg border font-bold text-xs whitespace-nowrap transition-all",
                 showFilters ? "bg-blue-600 border-blue-600 text-white" : "bg-card border-border text-gray-600 dark:text-gray-400"
               )}
             >
-              <SlidersHorizontal size={18} />
+              <SlidersHorizontal size={16} />
               {t('home.filters')}
             </button>
             <button 
               onClick={() => setFilters({ ...filters, showFavorites: !filters.showFavorites })}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-sm whitespace-nowrap transition-all",
+                "flex items-center gap-2 px-3 py-2 rounded-lg border font-bold text-xs whitespace-nowrap transition-all",
                 filters.showFavorites ? "bg-red-500 border-red-500 text-white" : "bg-card border-border text-gray-600 dark:text-gray-400"
               )}
             >
-              <Heart size={18} className={cn(filters.showFavorites && "fill-current")} />
+              <Heart size={16} className={cn(filters.showFavorites && "fill-current")} />
               {t('nav.favorites')}
             </button>
           </div>

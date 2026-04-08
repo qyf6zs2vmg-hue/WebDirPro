@@ -8,7 +8,7 @@ import { toggleFavorite, useFavorites } from '@/services/firebaseService';
 import { trackItemView } from '@/services/trackingService';
 import { useToast, Toast } from './Toast';
 import { trackAddToFavorite, trackOutboundLink } from '@/lib/analytics';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, TranslatedText } from '@/context/LanguageContext';
 
 interface ItemCardProps {
   item: DirectoryItem;
@@ -91,9 +91,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
       to={`/item/${item.id}`}
       onClick={handleTrackView}
       className={cn(
-        "group block bg-card rounded-2xl border border-border overflow-hidden card-shadow flex flex-col h-full cursor-pointer no-underline transition-all duration-300",
+        "group block bg-card rounded-xl border border-border overflow-hidden card-shadow flex flex-col h-full cursor-pointer no-underline transition-all duration-300",
         "dark:hover:border-blue-500/50 dark:hover:shadow-blue-500/10",
-        compact ? "p-2" : "p-0"
+        compact ? "p-1.5" : "p-0"
       )}
     >
       <div className={cn(
@@ -175,10 +175,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
         )}
       </div>
       
-      <div className={cn("flex flex-col flex-grow", compact ? "p-2" : "p-4")}>
-        <div className="flex justify-between items-start mb-1.5">
-          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-            {item.category}
+      <div className={cn("flex flex-col flex-grow", compact ? "p-1.5" : "p-3")}>
+        <div className="flex justify-between items-start mb-1">
+          <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+            <TranslatedText text={item.category} />
           </span>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-0.5">
@@ -197,48 +197,48 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, compact = false }) => 
         </div>
         
         <h3 className={cn(
-          "font-bold text-foreground mb-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1",
-          compact ? "text-sm" : "text-base"
+          "font-bold text-foreground mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1",
+          compact ? "text-xs" : "text-sm"
         )}>
-          {item.title}
+          <TranslatedText text={item.title} />
         </h3>
         
         {!compact && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
-            {item.shortDescription}
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 flex-grow leading-snug">
+            <TranslatedText text={item.shortDescription} />
           </p>
         )}
 
         {/* Target Audience Badges */}
         {!compact && item.targetAudience && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800/30">
-              <Users size={10} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 uppercase">
+          <div className="flex flex-wrap gap-1 mb-3">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800/30">
+              <Users size={8} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-[8px] font-bold text-blue-700 dark:text-blue-300 uppercase">
                 {item.targetAudience.level === 'Beginner' ? t('item.audience.level.beginner') : item.targetAudience.level === 'Pro' ? t('item.audience.level.pro') : t('item.audience.level.all')}
               </span>
             </div>
-            <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-md border border-indigo-100 dark:border-indigo-800/30">
-              <Zap size={10} className="text-indigo-600 dark:text-indigo-400" />
-              <span className="text-[9px] font-bold text-indigo-700 dark:text-indigo-300 uppercase">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-md border border-indigo-100 dark:border-indigo-800/30">
+              <Zap size={8} className="text-indigo-600 dark:text-indigo-400" />
+              <span className="text-[8px] font-bold text-indigo-700 dark:text-indigo-300 uppercase">
                 {item.targetAudience.role === 'Student' ? t('item.audience.role.student') : item.targetAudience.role === 'Developer' ? t('item.audience.role.developer') : t('item.audience.role.all')}
               </span>
             </div>
-            <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-100 dark:border-purple-800/30">
-              <Monitor size={10} className="text-purple-600 dark:text-purple-400" />
-              <span className="text-[9px] font-bold text-purple-700 dark:text-purple-300 uppercase">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-100 dark:border-purple-800/30">
+              <Monitor size={8} className="text-purple-600 dark:text-purple-400" />
+              <span className="text-[8px] font-bold text-purple-700 dark:text-purple-300 uppercase">
                 {item.targetAudience.pc === 'Weak' ? t('item.audience.pc.weak') : item.targetAudience.pc === 'Powerful' ? t('item.audience.pc.powerful') : t('item.audience.pc.all')}
               </span>
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-3 border-t border-border mt-auto">
-          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
+          <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             {item.type}
           </span>
           <span className={cn(
-            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+            "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
             item.pricing === 'Free' ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400" : 
             item.pricing === 'Freemium' ? "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400" : 
             "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"

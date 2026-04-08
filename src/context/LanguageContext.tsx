@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { translateText } from '@/services/translationService';
 
 type Language = 'ru' | 'uz';
 
@@ -6,6 +7,7 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  translate: (text: string) => Promise<string>;
 }
 
 const translations: Record<Language, Record<string, string>> = {
@@ -300,10 +302,48 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return translations[language][key] || key;
   };
 
+  const translate = async (text: string) => {
+    return translateText(text, language);
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, translate }}>
       {children}
     </LanguageContext.Provider>
+  );
+};
+
+export const TranslatedText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
+  const { language } = useLanguage();
+  const [translated, setTranslated] = React.useState(text);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (language === 'ru' || !text) {
+      setTranslated(text);
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+    
+    translateText(text, language).then((result) => {
+      if (isMounted) {
+        setTranslated(result);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [text, language]);
+
+  return (
+    <span className={className}>
+      {translated}
+      {loading && <span className="ml-1 opacity-50 animate-pulse">...</span>}
+    </span>
   );
 };
 

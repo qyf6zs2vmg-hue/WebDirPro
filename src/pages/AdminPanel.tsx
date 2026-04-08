@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { useToast, Toast } from '@/components/Toast';
 import { format } from 'date-fns';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, TranslatedText } from '@/context/LanguageContext';
 
 export const AdminPanel = () => {
   const { t } = useLanguage();
@@ -462,14 +462,16 @@ export const AdminPanel = () => {
                         <div className="flex items-center gap-3">
                           <img src={item.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-border" />
                           <div>
-                            <p className="font-bold text-foreground">{item.title}</p>
+                            <p className="font-bold text-foreground">
+                              <TranslatedText text={item.title} />
+                            </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{item.type}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase rounded">
-                          {item.category}
+                          <TranslatedText text={item.category} />
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -671,7 +673,9 @@ export const AdminPanel = () => {
                           <span className="text-sm font-bold text-foreground">{review.rating}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{review.comment}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                        <TranslatedText text={review.comment} />
+                      </p>
                       <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                         <span>ID Ресурса: {review.itemId}</span>
                         <span>•</span>

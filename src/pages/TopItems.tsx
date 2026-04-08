@@ -3,7 +3,7 @@ import { Trophy, Star, TrendingUp, Award } from 'lucide-react';
 import { useItems, useCategories } from '@/services/firebaseService';
 import { ItemCard } from '@/components/ItemCard';
 import { cn } from '@/lib/utils';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, TranslatedText } from '@/context/LanguageContext';
 
 export const TopItems = () => {
   const { items, loading } = useItems({ sortBy: 'highest-rating' });
@@ -93,7 +93,7 @@ export const TopItems = () => {
                     : "bg-card border border-border text-gray-600 dark:text-gray-400 hover:border-gray-400"
                 )}
               >
-                {cat.name}
+                <TranslatedText text={cat.name} />
               </button>
             ))}
           </div>

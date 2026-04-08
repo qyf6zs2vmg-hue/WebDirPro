@@ -97,9 +97,9 @@ ${itemsContext}`
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-all z-[60] group"
+        className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-all z-[60] group"
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} className="group-hover:scale-110 transition-transform" />}
+        {isOpen ? <X size={20} /> : <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />}
         {!isOpen && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse" />
         )}
@@ -112,21 +112,21 @@ ${itemsContext}`
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-[350px] sm:w-[400px] h-[500px] bg-card border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden z-[60]"
+            className="fixed bottom-18 right-4 w-[320px] sm:w-[380px] h-[450px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[60]"
           >
             {/* Header */}
-            <div className="p-4 bg-blue-600 text-white flex items-center justify-between">
+            <div className="p-3 bg-blue-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-white/20 rounded-lg">
-                  <Sparkles size={18} />
+                <div className="p-1 bg-white/20 rounded-lg">
+                  <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">ИИ Помощник</h3>
-                  <p className="text-[10px] text-blue-100">Mistral AI</p>
+                  <h3 className="font-bold text-xs">ИИ Помощник</h3>
+                  <p className="text-[9px] text-blue-100">Mistral AI</p>
                 </div>
               </div>
               <button onClick={() => setIsOpen(false)} className="hover:bg-white/10 p-1 rounded-lg">
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
@@ -174,12 +174,12 @@ ${itemsContext}`
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-border bg-card">
+            <div className="p-3 border-t border-border bg-card">
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Задайте вопрос..."
-                  className="w-full pl-4 pr-12 py-3 bg-input border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-foreground"
+                  className="w-full pl-3 pr-10 py-2 bg-input border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-foreground"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -187,9 +187,9 @@ ${itemsContext}`
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Send size={18} />
+                  <Send size={16} />
                 </button>
               </div>
             </div>
