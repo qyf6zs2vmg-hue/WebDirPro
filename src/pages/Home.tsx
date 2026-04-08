@@ -7,18 +7,23 @@ import { SkeletonItemCard } from '@/components/SkeletonItemCard';
 import { cn } from '@/lib/utils';
 import { getRecommendedItems, getRecentlyViewed, trackSearchQuery } from '@/services/trackingService';
 
+import { useLanguage } from '@/context/LanguageContext';
+import { trackSearch } from '@/lib/analytics';
+
 export const Home = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [placeholder, setPlaceholder] = React.useState('Поиск...');
+  const { t, language } = useLanguage();
 
   React.useEffect(() => {
     const updatePlaceholder = () => {
-      setPlaceholder(window.innerWidth < 640 ? 'Поиск...' : 'Поиск ресурсов, инструментов, курсов...');
+      setPlaceholder(window.innerWidth < 640 ? t('home.search.placeholder').slice(0, 10) + '...' : t('home.search.placeholder'));
     };
     updatePlaceholder();
     window.addEventListener('resize', updatePlaceholder);
     return () => window.removeEventListener('resize', updatePlaceholder);
-  }, []);
+  }, [t]);
+
   const [filters, setFilters] = React.useState({
     category: 'All',
     type: 'All',
@@ -34,7 +39,6 @@ export const Home = () => {
   const location = useLocation();
 
   const recommendedItems = React.useMemo(() => getRecommendedItems(items), [items]);
-  const recentlyViewed = React.useMemo(() => getRecentlyViewed(items), [items]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -50,7 +54,8 @@ export const Home = () => {
     const query = e.target.value;
     setSearchQuery(query);
     if (query.length > 2) {
-      trackSearchQuery(query, categories.map(c => c.name));
+      trackSearchQuery(query);
+      trackSearch(query);
     }
   };
 
@@ -68,12 +73,12 @@ export const Home = () => {
   });
 
   const filterOptions = {
-    types: ['Все', 'Website', 'App', 'Course', 'YouTube'],
-    pricing: ['Все', 'Free', 'Freemium', 'Paid'],
+    types: [t('home.category.all'), 'Website', 'App', 'Course', 'YouTube'],
+    pricing: [t('home.category.all'), 'Free', 'Freemium', 'Paid'],
     sort: [
-      { label: 'Высший рейтинг', value: 'highest-rating' },
-      { label: 'Новинки', value: 'newest' },
-      { label: 'Больше отзывов', value: 'most-reviewed' }
+      { label: t('home.sort.highest_rating'), value: 'highest-rating' },
+      { label: t('home.sort.newest'), value: 'newest' },
+      { label: t('home.sort.most_reviewed'), value: 'most-reviewed' }
     ]
   };
 
@@ -88,10 +93,10 @@ export const Home = () => {
         
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4 leading-tight">
-            Лучшие <span className="text-blue-200 dark:text-blue-300">ресурсы</span> для вашего роста
+            {t('home.hero.title')}
           </h1>
           <p className="text-blue-100 dark:text-blue-200/80 text-sm sm:text-base font-medium mb-8 opacity-90">
-            Курируемый каталог сайтов, приложений и курсов с высоким рейтингом.
+            {t('home.hero.subtitle')}
           </p>
 
           {/* Search Bar in Hero */}
@@ -116,7 +121,7 @@ export const Home = () => {
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <Sparkles className="text-blue-600 dark:text-blue-400" size={20} />
             </div>
-            <h2 className="text-xl font-bold text-foreground">Рекомендовано для вас</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('home.recommended')}</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {recommendedItems.map(item => (
@@ -132,7 +137,7 @@ export const Home = () => {
         <aside className="hidden lg:block w-64 flex-shrink-0">
           <div className="sticky top-24 space-y-8">
             <div>
-              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Сортировка</h3>
+              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">{t('home.sort')}</h3>
               <div className="space-y-2">
                 {filterOptions.sort.map(opt => (
                   <button
@@ -152,7 +157,7 @@ export const Home = () => {
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Категории</h3>
+              <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">{t('nav.catalog')}</h3>
               <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
                 <button
                   onClick={() => setFilters({ ...filters, category: 'All' })}
@@ -163,7 +168,7 @@ export const Home = () => {
                       : "text-gray-600 dark:text-gray-400 hover:text-foreground"
                   )}
                 >
-                  Все категории
+                  {t('home.category.all')}
                 </button>
                 {categories.map(cat => (
                   <button
@@ -190,7 +195,7 @@ export const Home = () => {
           <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
             <LayoutGrid className="text-indigo-600 dark:text-indigo-400" size={20} />
           </div>
-          <h2 className="text-xl font-bold text-foreground">Каталог ресурсов</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('home.catalog')}</h2>
         </div>
           {/* Mobile Filter Controls */}
           <div className="lg:hidden flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
@@ -202,7 +207,7 @@ export const Home = () => {
               )}
             >
               <SlidersHorizontal size={18} />
-              Фильтры
+              {t('home.filters')}
             </button>
             <button 
               onClick={() => setFilters({ ...filters, showFavorites: !filters.showFavorites })}
@@ -212,7 +217,7 @@ export const Home = () => {
               )}
             >
               <Heart size={18} className={cn(filters.showFavorites && "fill-current")} />
-              Избранное
+              {t('nav.favorites')}
             </button>
           </div>
 
@@ -220,7 +225,7 @@ export const Home = () => {
             <div className="lg:hidden bg-card border border-border rounded-2xl p-4 mb-6 animate-in slide-in-from-top-4 duration-300">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Сортировка</label>
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">{t('home.sort')}</label>
                   <select 
                     className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={filters.sortBy}
@@ -230,13 +235,13 @@ export const Home = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Категория</label>
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">{language === 'ru' ? 'Категория' : 'Kategoriya'}</label>
                   <select 
                     className="w-full p-3 bg-input border border-border rounded-xl text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                   >
-                    <option value="All">Все категории</option>
+                    <option value="All">{t('home.category.all')}</option>
                     {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                   </select>
                 </div>
@@ -262,8 +267,8 @@ export const Home = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-input rounded-full mb-4 text-gray-400">
                 <Search size={32} />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Результатов не найдено</h3>
-              <p className="text-gray-500 dark:text-gray-400">Попробуйте изменить фильтры или поисковый запрос.</p>
+              <h3 className="text-xl font-bold text-foreground mb-2">{t('home.no_results')}</h3>
+              <p className="text-gray-500 dark:text-gray-400">{t('home.no_results.subtitle')}</p>
             </div>
           )}
         </div>

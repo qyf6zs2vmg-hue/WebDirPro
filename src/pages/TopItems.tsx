@@ -3,10 +3,12 @@ import { Trophy, Star, TrendingUp, Award } from 'lucide-react';
 import { useItems, useCategories } from '@/services/firebaseService';
 import { ItemCard } from '@/components/ItemCard';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const TopItems = () => {
   const { items, loading } = useItems({ sortBy: 'highest-rating' });
   const { categories } = useCategories();
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState('All');
 
   const top3 = items.slice(0, 3);
@@ -21,10 +23,10 @@ export const TopItems = () => {
           <Trophy size={32} />
         </div>
         <h1 className="text-4xl font-extrabold text-foreground tracking-tight sm:text-5xl mb-4">
-          Зал <span className="text-yellow-500">Славы</span>
+          {t('top.title').split(' ')[0]} <span className="text-yellow-500">{t('top.title').split(' ')[1]}</span>
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Самые высокооцененные ресурсы в нашем каталоге по мнению сообщества.
+          {t('top.subtitle')}
         </p>
       </div>
 
@@ -35,7 +37,7 @@ export const TopItems = () => {
           {top3[1] && (
             <div className="md:mt-12 order-2 md:order-1">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-full">#2 Серебро</span>
+                <span className="inline-block px-4 py-1 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-full">{t('top.silver')}</span>
               </div>
               <ItemCard item={top3[1]} />
             </div>
@@ -44,7 +46,7 @@ export const TopItems = () => {
           {top3[0] && (
             <div className="order-1 md:order-2 scale-105 z-10">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-yellow-400 text-white text-sm font-bold rounded-full shadow-lg shadow-yellow-400/20">#1 Золото</span>
+                <span className="inline-block px-4 py-1 bg-yellow-400 text-white text-sm font-bold rounded-full shadow-lg shadow-yellow-400/20">{t('top.gold')}</span>
               </div>
               <ItemCard item={top3[0]} />
             </div>
@@ -53,7 +55,7 @@ export const TopItems = () => {
           {top3[2] && (
             <div className="md:mt-20 order-3">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1 bg-orange-200 dark:bg-orange-900/40 text-orange-800 dark:text-orange-400 text-sm font-bold rounded-full">#3 Бронза</span>
+                <span className="inline-block px-4 py-1 bg-orange-200 dark:bg-orange-900/40 text-orange-800 dark:text-orange-400 text-sm font-bold rounded-full">{t('top.bronze')}</span>
               </div>
               <ItemCard item={top3[2]} />
             </div>
@@ -66,7 +68,7 @@ export const TopItems = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
             <TrendingUp className="text-blue-600" />
-            Топ по категориям
+            {t('top.category_top')}
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar w-full md:w-auto">
             <button 
@@ -78,7 +80,7 @@ export const TopItems = () => {
                   : "bg-card border border-border text-gray-600 dark:text-gray-400 hover:border-gray-400"
               )}
             >
-              Все
+              {t('home.category.all')}
             </button>
             {categories.map(cat => (
               <button 
@@ -112,7 +114,7 @@ export const TopItems = () => {
         ) : (
           <div className="text-center py-20 bg-input rounded-3xl border border-dashed border-border">
             <Award className="mx-auto text-gray-300 dark:text-gray-700 mb-4" size={48} />
-            <p className="text-gray-500 dark:text-gray-400 font-medium">В этой категории пока нет ресурсов.</p>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">{t('top.no_items')}</p>
           </div>
         )}
       </div>

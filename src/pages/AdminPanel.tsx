@@ -21,7 +21,8 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  MessageSquare
+  MessageSquare,
+  ExternalLink
 } from 'lucide-react';
 import { 
   collection, 
@@ -46,8 +47,10 @@ import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { useToast, Toast } from '@/components/Toast';
 import { format } from 'date-fns';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const AdminPanel = () => {
+  const { t } = useLanguage();
   const [isAdminMode, setIsAdminMode] = React.useState(() => localStorage.getItem('adminMode') === 'true');
   const { items, loading: itemsLoading } = useItems();
   const { categories, loading: catsLoading } = useCategories();
@@ -285,6 +288,7 @@ export const AdminPanel = () => {
     if (!items.length) return null;
     
     const totalViews = items.reduce((acc, item) => acc + (item.viewsCount || 0), 0);
+    const totalClicks = items.reduce((acc, item) => acc + (item.clicksCount || 0), 0);
     const avgRating = items.reduce((acc, item) => acc + (item.averageRating || 0), 0) / items.length;
     
     const catStats = items.reduce((acc, item) => {
@@ -295,7 +299,7 @@ export const AdminPanel = () => {
     const topItems = [...items].sort((a, b) => (Number(b.viewsCount) || 0) - (Number(a.viewsCount) || 0)).slice(0, 5);
     const popularCategory = Object.entries(catStats).sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || 'Нет данных';
 
-    return { totalViews, avgRating, popularCategory, topItems };
+    return { totalViews, totalClicks, avgRating, popularCategory, topItems };
   }, [items]);
 
   if (!isAdminMode) {
@@ -343,22 +347,31 @@ export const AdminPanel = () => {
 
       {/* Analytics Overview */}
       {analytics && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Eye size={20} />
               </div>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Просмотры</p>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('item.views')}</p>
             </div>
             <p className="text-3xl font-bold text-foreground">{analytics.totalViews.toLocaleString()}</p>
+          </div>
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400">
+                <ExternalLink size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('item.clicks')}</p>
+            </div>
+            <p className="text-3xl font-bold text-foreground">{analytics.totalClicks.toLocaleString()}</p>
           </div>
           <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center text-green-600 dark:text-green-400">
                 <Star size={20} />
               </div>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ср. рейтинг</p>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('item.your_rating')}</p>
             </div>
             <p className="text-3xl font-bold text-foreground">{analytics.avgRating.toFixed(1)}</p>
           </div>
@@ -373,10 +386,10 @@ export const AdminPanel = () => {
           </div>
           <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400">
+              <div className="w-10 h-10 bg-gray-50 dark:bg-gray-900/20 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-400">
                 <BarChart3 size={20} />
               </div>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Всего ресурсов</p>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Всего</p>
             </div>
             <p className="text-3xl font-bold text-foreground">{items.length}</p>
           </div>
@@ -438,7 +451,7 @@ export const AdminPanel = () => {
                   <tr>
                     <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ресурс</th>
                     <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Категория</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Рейтинг</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Статистика</th>
                     <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Действия</th>
                   </tr>
                 </thead>
@@ -460,9 +473,19 @@ export const AdminPanel = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-1">
-                          <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-bold text-foreground">{item.averageRating.toFixed(1)}</span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                            <span className="text-xs font-bold text-foreground">{item.averageRating.toFixed(1)}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <Eye size={10} /> {item.viewsCount || 0}
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <ExternalLink size={10} /> {item.clicksCount || 0}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">

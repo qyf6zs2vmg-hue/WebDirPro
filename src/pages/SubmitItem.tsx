@@ -16,9 +16,11 @@ import { useCategories } from '@/services/firebaseService';
 import { ItemType, PricingType, Platform } from '@/types';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const SubmitItem = () => {
   const { categories } = useCategories();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -63,7 +65,7 @@ export const SubmitItem = () => {
       window.scrollTo(0, 0);
     } catch (err) {
       console.error(err);
-      setError("Не удалось отправить. Пожалуйста, попробуйте позже.");
+      setError(t('review.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -75,16 +77,16 @@ export const SubmitItem = () => {
         <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full mb-8 text-green-600 dark:text-green-400">
           <CheckCircle2 size={40} />
         </div>
-        <h1 className="text-3xl font-bold text-foreground mb-4">Заявка получена!</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">{t('submit.success_title')}</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-10">
-          Спасибо за предложение ресурса. Наша команда рассмотрит его и добавит в каталог, если он соответствует нашим критериям.
+          {t('submit.success_subtitle')}
         </p>
         <Link 
           to="/"
           className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
         >
           <ChevronLeft size={20} />
-          Назад в каталог
+          {t('submit.back')}
         </Link>
       </div>
     );
@@ -95,13 +97,13 @@ export const SubmitItem = () => {
       <div className="mb-12">
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 mb-4 hover:gap-3 transition-all">
           <ChevronLeft size={16} />
-          Назад в каталог
+          {t('submit.back')}
         </Link>
         <h1 className="text-4xl font-extrabold text-foreground tracking-tight mb-4">
-          Предложить <span className="text-blue-600 dark:text-blue-500">Ресурс</span>
+          {t('submit.title').split(' ')[0]} <span className="text-blue-600 dark:text-blue-500">{t('submit.title').split(' ').slice(1).join(' ')}</span>
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-400">
-          Знаете отличный сайт, приложение или курс? Поделитесь им с сообществом.
+          {t('submit.subtitle')}
         </p>
       </div>
 
@@ -115,7 +117,7 @@ export const SubmitItem = () => {
       <form onSubmit={handleSubmit} className="bg-card p-8 md:p-10 rounded-3xl border border-border shadow-xl space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Название ресурса</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.name')}</label>
             <input 
               type="text" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
@@ -126,33 +128,33 @@ export const SubmitItem = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Категория</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.category')}</label>
             <select 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
             >
-              <option value="">Выберите категорию</option>
+              <option value="">{t('submit.form.category_placeholder')}</option>
               {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Тип ресурса</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.type')}</label>
             <select 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value as ItemType })}
               required
             >
-              <option value="Website">Сайт</option>
-              <option value="App">Приложение</option>
-              <option value="Course">Курс</option>
+              <option value="Website">Website</option>
+              <option value="App">App</option>
+              <option value="Course">Course</option>
               <option value="YouTube">YouTube</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">URL изображения/логотипа</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.image')}</label>
             <input 
               type="url" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
@@ -165,11 +167,11 @@ export const SubmitItem = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Краткое описание</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.short_desc')}</label>
           <input 
             type="text" 
             className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-            placeholder="Одно предложение, описывающее ресурс"
+            placeholder="..."
             value={formData.shortDescription}
             onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
             required
@@ -177,11 +179,11 @@ export const SubmitItem = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Полное описание</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.full_desc')}</label>
           <textarea 
             className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
             rows={4}
-            placeholder="Расскажите подробнее, почему этот ресурс полезен..."
+            placeholder="..."
             value={formData.fullDescription}
             onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
             required
@@ -190,32 +192,32 @@ export const SubmitItem = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Основное назначение</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.purpose')}</label>
             <input 
               type="text" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-              placeholder="Напр. Изучение языков, Программирование, Дизайн"
+              placeholder="..."
               value={formData.purpose}
               onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Модель оплаты</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.pricing')}</label>
             <select 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               value={formData.pricing}
               onChange={(e) => setFormData({ ...formData, pricing: e.target.value as PricingType })}
             >
-              <option value="Free">Бесплатно</option>
+              <option value="Free">{t('item.pricing.free')}</option>
               <option value="Freemium">Freemium</option>
-              <option value="Paid">Платно</option>
+              <option value="Paid">{t('item.pricing.paid')}</option>
             </select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Ссылка на официальный сайт</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.link')}</label>
             <input 
               type="url" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
@@ -226,11 +228,11 @@ export const SubmitItem = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Стоимость подписки (если есть)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.subscription')}</label>
             <input 
               type="text" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-              placeholder="Напр. $9.99/мес"
+              placeholder="..."
               value={formData.subscriptionPrice}
               onChange={(e) => setFormData({ ...formData, subscriptionPrice: e.target.value })}
             />
@@ -239,7 +241,7 @@ export const SubmitItem = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Доступные платформы</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.platforms')}</label>
             <div className="flex flex-wrap gap-4 p-3 bg-input border border-border rounded-xl">
               {['Web', 'Android', 'iOS'].map((p) => (
                 <label key={p} className="flex items-center gap-2 cursor-pointer group">
@@ -261,44 +263,44 @@ export const SubmitItem = () => {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Альтернативы (через запятую)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.alternatives')}</label>
             <input 
               type="text" 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-              placeholder="Альтернатива 1, Альтернатива 2..."
+              placeholder="..."
               value={formData.alternatives}
               onChange={(e) => setFormData({ ...formData, alternatives: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Для кого этот ресурс?</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.audience')}</label>
             <div className="grid grid-cols-3 gap-2">
               <select 
                 className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={formData.targetAudience.level}
                 onChange={(e) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, level: e.target.value as any } })}
               >
-                <option value="All">Уровень: Все</option>
-                <option value="Beginner">Новичок</option>
-                <option value="Pro">Профи</option>
+                <option value="All">{t('item.audience.level')}: {t('item.audience.level.all')}</option>
+                <option value="Beginner">{t('item.audience.level.beginner')}</option>
+                <option value="Pro">{t('item.audience.level.pro')}</option>
               </select>
               <select 
                 className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={formData.targetAudience.role}
                 onChange={(e) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, role: e.target.value as any } })}
               >
-                <option value="All">Роль: Все</option>
-                <option value="Student">Школьник</option>
-                <option value="Developer">Разработчик</option>
+                <option value="All">{t('item.audience.role')}: {t('item.audience.role.all')}</option>
+                <option value="Student">{t('item.audience.role.student')}</option>
+                <option value="Developer">{t('item.audience.role.developer')}</option>
               </select>
               <select 
                 className="p-2 bg-input border border-border rounded-lg text-[10px] font-bold text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={formData.targetAudience.pc}
                 onChange={(e) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, pc: e.target.value as any } })}
               >
-                <option value="All">ПК: Любой</option>
-                <option value="Weak">Слабый</option>
-                <option value="Powerful">Мощный</option>
+                <option value="All">{t('item.audience.pc')}: {t('item.audience.pc.all')}</option>
+                <option value="Weak">{t('item.audience.pc.weak')}</option>
+                <option value="Powerful">{t('item.audience.pc.powerful')}</option>
               </select>
             </div>
           </div>
@@ -306,21 +308,21 @@ export const SubmitItem = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Плюсы (через запятую)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.pros')}</label>
             <textarea 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               rows={2}
-              placeholder="Быстро, Бесплатно, Легко использовать..."
+              placeholder="..."
               value={formData.pros}
               onChange={(e) => setFormData({ ...formData, pros: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Минусы (через запятую)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('submit.form.cons')}</label>
             <textarea 
               className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               rows={2}
-              placeholder="Медленно, Дорого, Ограниченные функции..."
+              placeholder="..."
               value={formData.cons}
               onChange={(e) => setFormData({ ...formData, cons: e.target.value })}
             />
@@ -339,17 +341,17 @@ export const SubmitItem = () => {
             {isSubmitting ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Отправка...
+                {t('submit.form.submitting')}
               </>
             ) : (
               <>
                 <Send size={20} />
-                Отправить заявку
+                {t('submit.form.submit')}
               </>
             )}
           </button>
           <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
-            Отправляя заявку, вы соглашаетесь с тем, что эта информация будет рассмотрена нашей командой.
+            {t('submit.form.disclaimer')}
           </p>
         </div>
       </form>

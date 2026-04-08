@@ -21,6 +21,11 @@ import { cn } from './lib/utils';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { Settings as SettingsPage } from './pages/Settings';
+import { AIChatAssistant } from './components/AIChatAssistant';
+import { FeedbackModal } from './components/FeedbackModal';
+
 const Header = () => {
   const [isAdminMode, setIsAdminMode] = React.useState(() => localStorage.getItem('adminMode') === 'true');
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -30,6 +35,7 @@ const Header = () => {
   const [passwordError, setPasswordError] = React.useState(false);
   
   const { categories } = useCategories();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const catRef = React.useRef<HTMLDivElement>(null);
@@ -77,16 +83,17 @@ const Header = () => {
   };
 
   const navItems = [
-    { name: 'Каталог', path: '/', icon: LayoutGrid },
-    { name: 'Топ рейтинга', path: '/top', icon: Trophy },
-    { name: 'История', path: '/history', icon: Clock },
-    { name: 'Предложить', path: '/submit', icon: Send },
-    { name: 'Админ', path: '/admin', icon: Settings, adminOnly: true },
+    { name: t('nav.catalog'), path: '/', icon: LayoutGrid },
+    { name: t('nav.top'), path: '/top', icon: Trophy },
+    { name: t('nav.history'), path: '/history', icon: Clock },
+    { name: t('nav.submit'), path: '/submit', icon: Send },
+    { name: t('nav.settings'), path: '/settings', icon: Settings },
+    { name: t('nav.admin'), path: '/admin', icon: Settings, adminOnly: true },
   ];
 
   return (
     <header className="glass-header sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2">
@@ -108,7 +115,7 @@ const Header = () => {
                 )}
               >
                 <LayoutGrid size={18} />
-                Категории
+                {t('nav.catalog')}
                 <ChevronDown size={14} className={cn("transition-transform", isCatOpen && "rotate-180")} />
               </button>
 
@@ -119,7 +126,7 @@ const Header = () => {
                     onClick={() => setIsCatOpen(false)}
                     className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                   >
-                    Все ресурсы
+                    {t('home.category.all')}
                   </Link>
                   {categories.map(cat => (
                     <Link 
@@ -174,7 +181,7 @@ const Header = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl p-8 border border-border">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-foreground">Вход для админа</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('admin.login.title')}</h2>
               <button 
                 onClick={() => { setShowPasswordModal(false); setPasswordError(false); setPasswordInput(''); }}
                 className="p-1 text-gray-400 hover:text-foreground rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -184,7 +191,7 @@ const Header = () => {
             </div>
             <form onSubmit={handlePasswordSubmit}>
               <div className="mb-6">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Введите пароль администратора</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('admin.login.password_label')}</label>
                 <input 
                   type="password" 
                   autoFocus
@@ -198,14 +205,14 @@ const Header = () => {
                   required
                 />
                 {passwordError && (
-                  <p className="mt-2 text-xs font-medium text-red-600">Неверный пароль. Попробуйте еще раз.</p>
+                  <p className="mt-2 text-xs font-medium text-red-600">{t('admin.login.error')}</p>
                 )}
               </div>
               <button 
                 type="submit"
                 className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
               >
-                Разблокировать панель
+                {t('admin.login.submit')}
               </button>
             </form>
           </div>
@@ -215,7 +222,7 @@ const Header = () => {
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-card border-t border-border py-4 px-4 space-y-2 animate-in slide-in-from-top-4 duration-300">
-          <div className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Навигация</div>
+          <div className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('nav.navigation')}</div>
           {navItems.map((item) => (
             (!item.adminOnly || isAdminMode) && (
               <Link
@@ -235,7 +242,7 @@ const Header = () => {
             )
           ))}
           
-          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-t border-border">Категории</div>
+          <div className="px-4 pt-4 pb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-t border-border">{t('nav.categories')}</div>
           <div className="grid grid-cols-2 gap-2">
             {categories.map(cat => (
               <Link
@@ -254,31 +261,43 @@ const Header = () => {
   );
 };
 
+const Footer = () => {
+  const { t } = useLanguage();
+  return (
+    <footer className="bg-card border-t border-border py-12 mt-20">
+      <div className="max-w-7xl mx-auto px-4 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
+          &copy; {new Date().getFullYear()} WebDirPro. {t('footer.subtitle')}
+        </p>
+      </div>
+    </footer>
+  );
+};
+
 export default function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
-          <Header />
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/item/:id" element={<ItemDetail />} />
-              <Route path="/top" element={<TopItems />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/submit" element={<SubmitItem />} />
-              <Route path="/history" element={<History />} />
-            </Routes>
-          </main>
-          <footer className="bg-card border-t border-border py-12 mt-20">
-            <div className="max-w-7xl mx-auto px-4 text-center">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                &copy; {new Date().getFullYear()} WebDirPro. Профессиональная платформа каталогов.
-              </p>
-            </div>
-          </footer>
-        </div>
-      </Router>
+      <LanguageProvider>
+        <Router>
+          <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+            <Header />
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/item/:id" element={<ItemDetail />} />
+                <Route path="/top" element={<TopItems />} />
+                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/submit" element={<SubmitItem />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </main>
+            <Footer />
+            <AIChatAssistant />
+            <FeedbackModal />
+          </div>
+        </Router>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

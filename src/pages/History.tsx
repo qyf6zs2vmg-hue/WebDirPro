@@ -4,6 +4,7 @@ import { useItems } from '@/services/firebaseService';
 import { ItemCard } from '@/components/ItemCard';
 import { getRecentlyViewed, clearRecentlyViewed } from '@/services/trackingService';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const History = () => {
   const { items, loading } = useItems({ category: 'All', type: 'All', pricing: 'All', sortBy: 'newest' });
@@ -28,6 +29,8 @@ export const History = () => {
     setRecentlyViewedIds([]);
   };
 
+  const { t } = useLanguage();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
@@ -36,10 +39,10 @@ export const History = () => {
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
               <Clock className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
-            <h1 className="text-3xl font-black text-foreground tracking-tight">История просмотров</h1>
+            <h1 className="text-3xl font-black text-foreground tracking-tight">{t('history.title')}</h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            Ресурсы, которые вы недавно посещали.
+            {t('history.subtitle')}
           </p>
         </div>
 
@@ -49,7 +52,7 @@ export const History = () => {
             className="flex items-center gap-2 px-6 py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/20 transition-all border border-red-100 dark:border-red-900/20"
           >
             <Trash2 size={18} />
-            Очистить историю
+            {t('history.clear')}
           </button>
         )}
       </div>
@@ -71,16 +74,16 @@ export const History = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-input rounded-full mb-6 text-gray-400">
             <Clock size={40} />
           </div>
-          <h3 className="text-2xl font-bold text-foreground mb-3">История пуста</h3>
+          <h3 className="text-2xl font-bold text-foreground mb-3">{t('history.empty')}</h3>
           <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
-            Вы еще не просматривали ни одного ресурса. Начните изучение каталога, чтобы увидеть историю здесь.
+            {t('history.empty_subtitle')}
           </p>
           <a 
             href="/"
             className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
           >
             <Search size={20} />
-            Перейти в каталог
+            {t('history.go_catalog')}
           </a>
         </div>
       )}

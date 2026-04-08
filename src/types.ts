@@ -49,6 +49,7 @@ export interface DirectoryItem {
   popularityTrend: number; // growth percentage
   currentViewers: number;
   targetAudience: TargetAudience;
+  tags?: string[];
   createdAt: any; // Firestore Timestamp
   isNew?: boolean;
   isTopRated?: boolean;

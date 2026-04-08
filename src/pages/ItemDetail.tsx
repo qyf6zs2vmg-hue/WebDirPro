@@ -19,12 +19,16 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { useItem, useReviews, submitReview, incrementViews, useFavorites, toggleFavorite, useItems } from '@/services/firebaseService';
+import { useItem, useReviews, submitReview, incrementViews, incrementClicks, useFavorites, toggleFavorite, useItems } from '@/services/firebaseService';
 import { RatingStars } from '@/components/RatingStars';
 import { ItemCard } from '@/components/ItemCard';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast, Toast } from '@/components/Toast';
+
+import { useLanguage } from '@/context/LanguageContext';
+import { trackOutboundLink, trackAddToFavorite } from '@/lib/analytics';
+import { isUniqueView, isUniqueClick, addToClickHistory } from '@/services/trackingService';
 
 export const ItemDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,21 +37,33 @@ export const ItemDetail = () => {
   const { items: allItems } = useItems();
   const { favorites } = useFavorites();
   const { toast, showToast, hideToast } = useToast();
+  const { t, language } = useLanguage();
   const isFavorite = id ? favorites.includes(id) : false;
+
+  const [relatedLimit, setRelatedLimit] = React.useState(6);
 
   const relatedItems = React.useMemo(() => {
     if (!item || !allItems.length) return [];
     return allItems
       .filter(i => i.category === item.category && i.id !== item.id)
-      .slice(0, 3);
+      .sort((a, b) => {
+        // Sort by rating, then views
+        if (b.averageRating !== a.averageRating) return b.averageRating - a.averageRating;
+        return (b.viewsCount || 0) - (a.viewsCount || 0);
+      });
   }, [item, allItems]);
+
+  const visibleRelated = React.useMemo(() => relatedItems.slice(0, relatedLimit), [relatedItems, relatedLimit]);
+
   const [userRating, setUserRating] = React.useState(0);
   const [userName, setUserName] = React.useState('');
   const [comment, setComment] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (id) incrementViews(id);
+    if (id && isUniqueView(id)) {
+      incrementViews(id);
+    }
   }, [id]);
 
   const [showReviews, setShowReviews] = React.useState(false);
@@ -55,7 +71,7 @@ export const ItemDetail = () => {
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userRating === 0) return showToast("Пожалуйста, выберите оценку", "info");
+    if (userRating === 0) return showToast(t('review.select_rating'), "info");
 
     setIsSubmitting(true);
     try {
@@ -70,32 +86,45 @@ export const ItemDetail = () => {
       setUserRating(0);
       setShowReviewForm(false);
       setShowReviews(true);
-      showToast("Отзыв опубликован!", "success");
+      showToast(t('review.success'), "success");
     } catch (error) {
       console.error(error);
-      showToast("Ошибка при публикации отзыва", "error");
+      showToast(t('review.error'), "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleFavorite = () => {
-    if (!id) return;
+    if (!id || !item) return;
     try {
       toggleFavorite(id, isFavorite);
+      if (!isFavorite) {
+        trackAddToFavorite(id, item.title);
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
-  if (itemLoading) return <div className="max-w-7xl mx-auto p-8 animate-pulse">Загрузка...</div>;
-  if (!item) return <div className="text-center py-20">Ресурс не найден</div>;
+  const handleVisitSite = () => {
+    if (item) {
+      trackOutboundLink(item.link);
+      if (isUniqueClick(item.id)) {
+        incrementClicks(item.id);
+      }
+      addToClickHistory(item.id, item.title);
+    }
+  };
+
+  if (itemLoading) return <div className="max-w-7xl mx-auto p-8 animate-pulse">{t('loading')}</div>;
+  if (!item) return <div className="text-center py-20">{t('home.no_results')}</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-8 transition-colors">
         <ChevronLeft size={16} />
-        Назад в каталог
+        {t('submit.back')}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -126,11 +155,16 @@ export const ItemDetail = () => {
                   <span className="text-lg font-bold text-foreground ml-2">{item.averageRating.toFixed(1)}</span>
                 </div>
                 <span className="text-gray-300 dark:text-gray-800">|</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{item.totalRatings} Отзывов</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{item.totalRatings} {t('item.reviews_count')}</span>
                 <span className="text-gray-300 dark:text-gray-800">|</span>
                 <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                   <Eye size={16} />
-                  {item.viewsCount} Просмотров
+                  {item.viewsCount || 0} {t('item.views')}
+                </div>
+                <span className="text-gray-300 dark:text-gray-800">|</span>
+                <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                  <ExternalLink size={16} />
+                  {item.clicksCount || 0} {t('item.clicks')}
                 </div>
               </div>
               <div className="flex flex-wrap gap-4 mb-8">
@@ -138,9 +172,10 @@ export const ItemDetail = () => {
                   href={item.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
+                  onClick={handleVisitSite}
                   className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                 >
-                  Посетить сайт
+                  {t('item.visit')}
                   <ExternalLink size={20} />
                 </a>
                 <button 
@@ -153,17 +188,15 @@ export const ItemDetail = () => {
                   )}
                 >
                   <Heart size={20} className={cn(isFavorite && "fill-current")} />
-                  {isFavorite ? 'В избранном' : 'В избранное'}
+                  {isFavorite ? t('item.favorite.remove') : t('item.favorite.add')}
                 </button>
               </div>
-
-              {/* Real-time Analytics Bar removed as per user request */}
             </div>
           </div>
 
           <div className="space-y-12">
             <section>
-              <h2 className="text-2xl font-bold text-foreground mb-4">О ресурсе {item.title}</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-4">{t('item.about')} {item.title}</h2>
               <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-400">
                 {item.fullDescription?.split('\n')?.map((p, i) => <p key={i} className="mb-4">{p}</p>)}
               </div>
@@ -173,7 +206,7 @@ export const ItemDetail = () => {
               <section className="bg-green-50 dark:bg-green-900/10 p-6 rounded-2xl border border-green-100 dark:border-green-900/20">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-green-800 dark:text-green-400 mb-4">
                   <CheckCircle2 size={20} />
-                  Плюсы
+                  {t('item.pros')}
                 </h3>
                 <ul className="space-y-3">
                   {item.pros?.map((pro, i) => (
@@ -187,7 +220,7 @@ export const ItemDetail = () => {
               <section className="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/20">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-red-800 dark:text-red-400 mb-4">
                   <XCircle size={20} />
-                  Минусы
+                  {t('item.cons')}
                 </h3>
                 <ul className="space-y-3">
                   {item.cons?.map((con, i) => (
@@ -202,19 +235,19 @@ export const ItemDetail = () => {
 
             <section className="border-t border-border pt-12">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-foreground">Отзывы ({item.totalRatings})</h2>
+                <h2 className="text-2xl font-bold text-foreground">{t('item.reviews')} ({item.totalRatings})</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     onClick={() => setShowReviews(!showReviews)}
                     className="flex-1 sm:flex-none px-4 py-2 bg-input text-foreground font-bold rounded-lg border border-border hover:bg-border transition-colors text-sm"
                   >
-                    {showReviews ? 'Скрыть отзывы' : 'Показать отзывы'}
+                    {showReviews ? t('item.reviews.hide') : t('item.reviews.show')}
                   </button>
                   <button 
                     onClick={() => setShowReviewForm(!showReviewForm)}
                     className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-sm"
                   >
-                    Написать отзыв
+                    {t('item.reviews.write')}
                   </button>
                 </div>
               </div>
@@ -222,24 +255,24 @@ export const ItemDetail = () => {
               {showReviewForm && (
                 <form onSubmit={handleReviewSubmit} className="bg-card p-6 rounded-2xl border border-border mb-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-foreground uppercase text-xs tracking-wider">Новый отзыв</h3>
+                    <h3 className="font-bold text-foreground uppercase text-xs tracking-wider">{t('item.new_review')}</h3>
                     <button type="button" onClick={() => setShowReviewForm(false)} className="text-gray-400 hover:text-foreground">
                       <XCircle size={20} />
                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Ваше имя (опционально)</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('item.your_name')}</label>
                       <input 
                         type="text"
                         className="w-full p-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="Напр. Иван Иванов"
+                        placeholder="..."
                         value={userName}
                         onChange={(e) => setUserName(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Ваша оценка</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('item.your_rating')}</label>
                       <RatingStars 
                         rating={userRating} 
                         interactive 
@@ -249,11 +282,11 @@ export const ItemDetail = () => {
                     </div>
                   </div>
                   <div className="mb-6">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Ваш комментарий</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('item.your_comment')}</label>
                     <textarea 
                       className="w-full p-4 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       rows={4}
-                      placeholder="Поделитесь своим опытом использования этого ресурса..."
+                      placeholder="..."
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       required
@@ -265,13 +298,13 @@ export const ItemDetail = () => {
                       onClick={() => setShowReviewForm(false)}
                       className="px-6 py-2.5 bg-input text-foreground font-bold rounded-lg hover:bg-border transition-colors"
                     >
-                      Отмена
+                      {t('item.cancel')}
                     </button>
                     <button 
                       disabled={isSubmitting}
                       className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                      {isSubmitting ? 'Отправка...' : 'Опубликовать'}
+                      {isSubmitting ? t('submit.form.submitting') : t('item.publish')}
                     </button>
                   </div>
                 </form>
@@ -289,7 +322,7 @@ export const ItemDetail = () => {
                           <div>
                             <h4 className="font-bold text-foreground">{review.userName}</h4>
                             <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">
-                              {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'dd.MM.yyyy') : 'Только что'}
+                              {review.createdAt?.seconds ? format(new Date(review.createdAt.seconds * 1000), 'dd.MM.yyyy') : t('item.just_now')}
                             </p>
                           </div>
                         </div>
@@ -299,7 +332,7 @@ export const ItemDetail = () => {
                     </div>
                   )) : (
                     <div className="text-center py-12 bg-input rounded-2xl border border-dashed border-border">
-                      <p className="text-gray-500 dark:text-gray-400">Отзывов пока нет. Будьте первым!</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('item.reviews.none')}</p>
                     </div>
                   )}
                 </div>
@@ -311,14 +344,14 @@ export const ItemDetail = () => {
         {/* Right Column: Sidebar Stats */}
         <div className="space-y-8">
           <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <h3 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">Детали</h3>
+            <h3 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">{t('item.details')}</h3>
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <Layers size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Назначение</p>
+                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.purpose')}</p>
                   <p className="text-sm font-semibold text-foreground">{item.purpose}</p>
                 </div>
               </div>
@@ -327,9 +360,9 @@ export const ItemDetail = () => {
                   <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Цена</p>
+                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.pricing')}</p>
                   <p className="text-sm font-semibold text-foreground">
-                    {item.pricing === 'Free' ? 'Бесплатно' : item.pricing === 'Paid' ? 'Платно' : item.pricing} {item.subscriptionPrice && `(${item.subscriptionPrice})`}
+                    {item.pricing === 'Free' ? t('item.pricing.free') : item.pricing === 'Paid' ? t('item.pricing.paid') : item.pricing} {item.subscriptionPrice && `(${item.subscriptionPrice})`}
                   </p>
                 </div>
               </div>
@@ -338,7 +371,7 @@ export const ItemDetail = () => {
                   <Globe size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Платформы</p>
+                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{t('item.platforms')}</p>
                   <div className="flex flex-wrap gap-3 mt-2">
                     {item.platforms?.includes('Web') && (
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-input rounded-lg border border-border">
@@ -365,38 +398,38 @@ export const ItemDetail = () => {
           </div>
 
           <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <h3 className="text-lg font-bold text-foreground mb-4">Для кого это?</h3>
+            <h3 className="text-lg font-bold text-foreground mb-4">{t('item.audience')}</h3>
             <div className="space-y-4 mb-8">
               <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
                 <div className="flex items-center gap-3">
                   <Users size={18} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Уровень</span>
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('item.audience.level')}</span>
                 </div>
                 <span className="text-xs font-black text-blue-700 dark:text-blue-300 uppercase">
-                  {item.targetAudience?.level === 'Beginner' ? 'Новичок' : item.targetAudience?.level === 'Pro' ? 'Профи' : 'Любой'}
+                  {item.targetAudience?.level === 'Beginner' ? t('item.audience.level.beginner') : item.targetAudience?.level === 'Pro' ? t('item.audience.level.pro') : t('item.audience.level.all')}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
                 <div className="flex items-center gap-3">
                   <Zap size={18} className="text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Роль</span>
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('item.audience.role')}</span>
                 </div>
                 <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase">
-                  {item.targetAudience?.role === 'Student' ? 'Школьник' : item.targetAudience?.role === 'Developer' ? 'Разработчик' : 'Любой'}
+                  {item.targetAudience?.role === 'Student' ? t('item.audience.role.student') : item.targetAudience?.role === 'Developer' ? t('item.audience.role.developer') : t('item.audience.role.all')}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/30">
                 <div className="flex items-center gap-3">
                   <Monitor size={18} className="text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Железо</span>
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('item.audience.pc')}</span>
                 </div>
                 <span className="text-xs font-black text-purple-700 dark:text-purple-300 uppercase">
-                  {item.targetAudience?.pc === 'Weak' ? 'Слабый ПК' : item.targetAudience?.pc === 'Powerful' ? 'Мощный ПК' : 'Любой'}
+                  {item.targetAudience?.pc === 'Weak' ? t('item.audience.pc.weak') : item.targetAudience?.pc === 'Powerful' ? t('item.audience.pc.powerful') : t('item.audience.pc.all')}
                 </span>
               </div>
             </div>
             
-            <h3 className="text-lg font-bold text-foreground mb-4">Альтернативы</h3>
+            <h3 className="text-lg font-bold text-foreground mb-4">{t('item.alternatives')}</h3>
             <div className="space-y-3">
               {item.alternatives?.map((alt, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -406,19 +439,38 @@ export const ItemDetail = () => {
               ))}
             </div>
           </div>
-
-          {relatedItems.length > 0 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold text-foreground">Похожие ресурсы</h3>
-              <div className="space-y-4">
-                {relatedItems.map(rel => (
-                  <ItemCard key={rel.id} item={rel} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Related Resources Section */}
+      {relatedItems.length > 0 && (
+        <section className="mt-20">
+          <div className="flex items-center gap-2 mb-8">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <TrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground">{t('item.related')}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visibleRelated.map(rel => (
+              <ItemCard key={rel.id} item={rel} />
+            ))}
+          </div>
+
+          {relatedLimit < relatedItems.length && (
+            <div className="mt-12 text-center">
+              <button
+                onClick={() => setRelatedLimit(prev => prev + 6)}
+                className="px-8 py-3 bg-card border border-border text-foreground font-bold rounded-xl hover:bg-input transition-all"
+              >
+                {t('item.load_more')}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </div>
   );

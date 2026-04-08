@@ -156,6 +156,13 @@ export const incrementViews = async (itemId: string) => {
   });
 };
 
+export const incrementClicks = async (itemId: string) => {
+  const itemRef = doc(db, 'items', itemId);
+  await updateDoc(itemRef, {
+    clicksCount: increment(1)
+  });
+};
+
 export const useFavorites = () => {
   const [favorites, setFavorites] = React.useState<string[]>(() => {
     const saved = localStorage.getItem('favorites');
